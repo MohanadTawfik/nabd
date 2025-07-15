@@ -1,48 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:nabd/features/goals/models/goal_model.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:nabd/data/app_data.dart';
+import 'package:nabd/features/goals/screens/goal_details_screen.dart';
 import 'package:nabd/features/goals/widgets/goal_card_widget.dart';
+import 'package:provider/provider.dart';
 import 'add_goal_screen.dart';
 
 
-// 2. حولنا الشاشة إلى StatefulWidget لتتمكن من تحديث حالتها (قائمة الأهداف)
-class GoalsScreen extends StatefulWidget {
+class GoalsScreen extends StatelessWidget {
   const GoalsScreen({super.key});
 
-  @override
-  State<GoalsScreen> createState() => _GoalsScreenState();
-}
-
-class _GoalsScreenState extends State<GoalsScreen> {
-  // 3. قائمة الأهداف الآن هي جزء من "حالة" الشاشة
-  final List<Goal> _goals = [
-    Goal(
-        name: 'سيارة أحلامي',
-        icon: Icons.directions_car,
-        savedAmount: 750000.0,
-        totalAmount: 1000000.0,
-        color: Colors.blue.shade300),
-    Goal(
-        name: 'السفر إلى سقطرى',
-        icon: Icons.airplanemode_active,
-        savedAmount: 200000.0,
-        totalAmount: 500000.0,
-        color: Colors.teal.shade300),
-  ];
-
-  // 4. دالة للانتقال لشاشة الإضافة وانتظار النتيجة
-  void _navigateAndAddGoal(BuildContext context) async {
-    // نستخدم await لننتظر حتى تعود شاشة الإضافة بالهدف الجديد
-    final newGoal = await Navigator.push<Goal>(
+  void _navigateAndAddGoal(BuildContext context) {
+    Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const AddGoalScreen()),
     );
-
-    // إذا عادت الشاشة بهدف جديد (المستخدم لم يضغط "رجوع")
-    if (newGoal != null) {
-      setState(() {
-        _goals.add(newGoal); // نضيف الهدف الجديد للقائمة
-      });
-    }
   }
 
   @override
@@ -54,25 +26,59 @@ class _GoalsScreenState extends State<GoalsScreen> {
           IconButton(
             icon: const Icon(Icons.add_circle_outline,
                 size: 28, color: Colors.white),
-            onPressed: () =>
-                _navigateAndAddGoal(context), // 5. استدعاء الدالة الجديدة
+            onPressed: () => _navigateAndAddGoal(context),
           ),
         ],
       ),
-      body: _goals.isEmpty
-          ? const Center(
-              child: Text('ليس لديك أهداف بعد. أضف هدفاً جديداً!',
-                  style: TextStyle(color: Colors.white70, fontSize: 16)))
-          : ListView.separated(
+      body: Consumer<AppData>(
+        builder: (context, appData, child) {
+          final goals = appData.goals;
+
+          if (goals.isEmpty) {
+            return const Center(
+                child: Text('ليس لديك أهداف بعد. أضف هدفاً جديداً!',
+                    style: TextStyle(color: Colors.white70, fontSize: 16)));
+          }
+
+          // 2. نغلف القائمة بـ AnimationLimiter
+          return AnimationLimiter(
+            child: ListView.builder(
               padding: const EdgeInsets.all(16.0),
-              itemCount: _goals.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 16),
+              itemCount: goals.length,
               itemBuilder: (context, index) {
-                final goal = _goals[index];
-                // 6. نمرر كائن الهدف بالكامل إلى الويدجت
-                return GoalCardWidget(goal: goal);
+                final goal = goals[index];
+                // 3. نغلف كل عنصر في القائمة بويدجتس الأنيميشن
+                return AnimationConfiguration.staggeredList(
+                  position: index,
+                  duration: const Duration(milliseconds: 500),
+                  child: SlideAnimation(
+                    // 4. أنيميشن الانزلاق
+                    verticalOffset: 50.0,
+                    child: FadeInAnimation(
+                      // 5. أنيميشن التلاشي للداخل
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    GoalDetailsScreen(goal: goal),
+                              ),
+                            );
+                          },
+                          child: GoalCardWidget(goal: goal),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
               },
             ),
+          );
+        },
+      ),
     );
   }
 }

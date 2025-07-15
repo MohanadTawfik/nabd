@@ -19,6 +19,7 @@ class FinancialApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xff0d1117),
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.transparent,
+          foregroundColor: Colors.white,
           elevation: 0,
           titleTextStyle: TextStyle(
               fontFamily: 'Tajawal',

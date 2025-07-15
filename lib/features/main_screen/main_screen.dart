@@ -7,21 +7,57 @@ import '../settings/screens/settings_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
-
   @override
   State<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
-  int _selectedIndex = 0; // لتتبع أيقونة الشريط السفلي المختارة
+class _MainScreenState extends State<MainScreen>
+    with SingleTickerProviderStateMixin {
+  int _selectedIndex = 0;
 
-  // قائمة الشاشات التي سنتنقل بينها
+  // 1. نجعل المتحكمات قابلة للـ null لتجنب أي أخطاء تهيئة
+  AnimationController? _animationController;
+  Animation<Color?>? _colorAnimation1;
+  Animation<Color?>? _colorAnimation2;
+  Animation<Color?>? _colorAnimation3;
+
   static const List<Widget> _widgetOptions = <Widget>[
-    DashboardScreen(), // الشاشة الأولى (الرئيسية)
-    ReportsScreen(), // الشاشة الثانية (التقارير)
-    GoalsScreen(), // شاشة الأهداف
-    SettingsScreen(), // شاشة الإعدادات
+    DashboardScreen(),
+    ReportsScreen(),
+    GoalsScreen(),
+    SettingsScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // 2. نقوم بتهيئة المتحكمات كالمعتاد
+    _animationController =
+        AnimationController(vsync: this, duration: const Duration(seconds: 8));
+
+    _colorAnimation1 = ColorTween(
+      begin: const Color(0xff0d1117),
+      end: const Color(0xff161b22).withOpacity(0.5),
+    ).animate(_animationController!);
+
+    _colorAnimation2 = ColorTween(
+      begin: const Color(0xff1fddff).withOpacity(0.1),
+      end: const Color(0xff8952ff).withOpacity(0.1),
+    ).animate(_animationController!);
+
+    _colorAnimation3 = ColorTween(
+      begin: const Color(0xff8952ff).withOpacity(0.15),
+      end: const Color(0xff0d1117),
+    ).animate(_animationController!);
+
+    _animationController!.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _animationController?.dispose(); // استخدام ?. للأمان
+    super.dispose();
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -31,47 +67,77 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // الجسم الآن يعرض الشاشة المختارة من القائمة
-      body: _widgetOptions.elementAt(_selectedIndex),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            backgroundColor: const Color(0xff161b22),
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    // 3. نضيف فحصاً للتأكد من أن المتحكمات قد تم تهيئتها قبل استخدامها
+    // هذا يمنع الخطأ بشكل نهائي
+    if (_animationController == null) {
+      // عرض شاشة فارغة آمنة أثناء تحميل الأنيميشن في أول جزء من الثانية
+      return const Scaffold(backgroundColor: Color(0xff0d1117));
+    }
+
+    return Stack(
+      children: [
+        AnimatedBuilder(
+          animation: _animationController!, // الآن نستخدم ! بأمان
+          builder: (context, child) {
+            return Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    _colorAnimation1!.value!,
+                    _colorAnimation2!.value!,
+                    _colorAnimation3!.value!,
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+            );
+          },
+        ),
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          body: _widgetOptions.elementAt(_selectedIndex),
+          floatingActionButton: FloatingActionButton(
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: const Color(0xff161b22),
+                
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                builder: (context) => const AddTransactionPanel(),
+              );
+            },
+            backgroundColor: const Color(0xff8952ff),
+            child: const Icon(Icons.add, color: Colors.white54, size: 30),
+          ),
+          floatingActionButtonLocation:
+              FloatingActionButtonLocation.centerDocked,
+          bottomNavigationBar: BottomAppBar(
+            shape: const CircularNotchedRectangle(),
+            notchMargin: 8.0,
+            color: const Color(0xff161b22).withOpacity(0.8),
+            child: SizedBox(
+              height: 60,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNavItem(Icons.home, 0),
+                  _buildNavItem(Icons.bar_chart, 1),
+                  const SizedBox(width: 40),
+                  _buildNavItem(Icons.wallet_giftcard, 2),
+                  _buildNavItem(Icons.settings, 3),
+                ],
+              ),
             ),
-            builder: (context) => const AddTransactionPanel(),
-          );
-        },
-        backgroundColor: const Color(0xff8952ff),
-        child: const Icon(Icons.add, color: Colors.white70, size: 30),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        notchMargin: 8.0,
-        color: const Color(0xff161b22),
-        child: SizedBox(
-          height: 60,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(Icons.home, 0),
-              _buildNavItem(Icons.bar_chart, 1),
-              const SizedBox(width: 40),
-              _buildNavItem(Icons.wallet_giftcard, 2),
-              _buildNavItem(Icons.settings, 3),
-            ],
           ),
         ),
-      ),
+      ],
     );
   }
 
-  // ويدجت مساعد لبناء أيقونة التنقل
   Widget _buildNavItem(IconData icon, int index) {
     return IconButton(
       icon: Icon(

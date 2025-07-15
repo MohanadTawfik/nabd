@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/goals/models/goal_model.dart';
+import 'package:provider/provider.dart';
 
 class AddGoalScreen extends StatefulWidget {
   const AddGoalScreen({super.key});
@@ -22,14 +24,11 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
     {'icon': Icons.home, 'color': Colors.green.shade300},
     {'icon': Icons.school, 'color': Colors.orange.shade300},
     {'icon': Icons.camera_alt, 'color': Colors.red.shade300},
-    {'icon': Icons.phone_android, 'color': Colors.grey.shade400},
-    {'icon': Icons.star, 'color': Colors.yellow.shade600},
   ];
 
   @override
   void initState() {
     super.initState();
-    // اختيار أول أيقونة بشكل افتراضي
     _selectedIcon = _icons[0]['icon'] as IconData;
     _selectedColor = _icons[0]['color'] as Color;
   }
@@ -41,17 +40,21 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
     super.dispose();
   }
 
+  // 1. دالة الحفظ الآن تستخدم Provider
   void _saveGoal() {
     if (_formKey.currentState!.validate()) {
-      // 2. إنشاء كائن الهدف الجديد من البيانات المدخلة
       final newGoal = Goal(
         name: _nameController.text,
         icon: _selectedIcon,
         totalAmount: double.tryParse(_amountController.text) ?? 0.0,
         color: _selectedColor,
       );
-      // 3. إرجاع الهدف الجديد إلى الشاشة السابقة
-      Navigator.pop(context, newGoal);
+
+      // 2. إضافة الهدف مباشرة إلى AppData
+      Provider.of<AppData>(context, listen: false).addGoal(newGoal);
+
+      // 3. العودة للشاشة السابقة (لم نعد بحاجة لإرجاع بيانات)
+      Navigator.pop(context);
     }
   }
 
@@ -96,7 +99,7 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _saveGoal, // 4. استدعاء دالة الحفظ الجديدة
+                  onPressed: _saveGoal,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xff8952ff),
                     foregroundColor: Colors.white,

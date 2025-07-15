@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:nabd/data/app_data.dart';
 import 'package:provider/provider.dart';
+import 'package:simple_gradient_text/simple_gradient_text.dart';
 
 // 1. أعدنا الويدجت إلى StatefulWidget مع SingleTickerProviderStateMixin
 class FinancialPulseWidget extends StatefulWidget {
@@ -37,15 +38,30 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
     super.dispose();
   }
 
+  // 1. دالة ذكية لتحديد اللون بناءً على نسبة الإنفاق
+  List<Color> _getPulseColors(double expenseRatio) {
+    // Color.lerp تقوم بالدمج بين لونين بناءً على نسبة
+    // إذا كانت النسبة 0 (لم يصرف شيء)، يكون اللون أخضر بالكامل
+    // إذا كانت النسبة 1 (صرف كل دخله)، يكون اللون أحمر بالكامل
+    // وما بينهما هو تدرج جميل
+    final color = Color.lerp(Colors.green.shade400, Colors.red.shade400,
+        expenseRatio.clamp(0.0, 1.0))!;
+    return [color.withOpacity(0.8), color];
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 4. نستخدم Consumer هنا للاستماع للتغيرات في AppData
     return Consumer<AppData>(
       builder: (context, appData, child) {
         final format = NumberFormat("#,##0", "en_US");
         final balance = appData.currentBalance;
 
-        // 5. نمرر الـ child الذي يحتوي على الأنيميشن
+        // 2. حساب نسبة الإنفاق (المصروف / الدخل)
+        final expenseRatio = appData.totalIncome > 0
+            ? appData.totalExpense / appData.totalIncome
+            : 0.0;
+        final pulseColors = _getPulseColors(expenseRatio);
+
         return AnimatedBuilder(
           animation: _controller,
           builder: (context, animChild) {
@@ -56,20 +72,23 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
               ),
             );
           },
-          // 6. الـ child هنا هو الـ Container الذي يعرض البيانات الحقيقية
-          child: Container(
+          child: AnimatedContainer(
+            // 3. استخدام AnimatedContainer لتغيير اللون بسلاسة
+            duration: const Duration(milliseconds: 800),
             width: 250,
             height: 250,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                colors: [Color(0xff1fddff), Color(0xff8952ff)],
+              gradient: LinearGradient(
+                // 4. استخدام الألوان الديناميكية
+                colors: pulseColors,
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xff8952ff).withOpacity(0.4),
+                  color: pulseColors.last
+                      .withOpacity(0.4), // الظل أيضاً يأخذ اللون الجديد
                   blurRadius: 20,
                   spreadRadius: 2,
                 ),
@@ -82,12 +101,12 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
                   const Text('رصيدك الحالي',
                       style: TextStyle(color: Colors.white70, fontSize: 18)),
                   const SizedBox(height: 8),
-                  Text(
-                    format.format(balance), // الرقم الآن حقيقي!
+                  // 5. استخدام حزمة النص المتدرج لإضافة لمسة جمالية
+                  GradientText(
+                    format.format(balance),
                     style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 40,
-                        fontWeight: FontWeight.bold),
+                        fontSize: 40, fontWeight: FontWeight.bold),
+                    colors: const [Colors.white, Colors.white70],
                   ),
                   const Text('ريال يمني',
                       style: TextStyle(color: Colors.white70, fontSize: 16)),
