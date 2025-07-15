@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:nabd/data/app_data.dart';
+import 'package:nabd/features/transactions/models/transaction_model.dart';
+import 'package:provider/provider.dart';
 
 class AddTransactionPanel extends StatefulWidget {
   const AddTransactionPanel({super.key});
@@ -9,28 +12,36 @@ class AddTransactionPanel extends StatefulWidget {
 class _AddTransactionPanelState extends State<AddTransactionPanel> {
   String _amount = '0';
   String? _selectedCategory;
-  final List<String> _categories = ['طعام', 'مواصلات', 'مقاضي', 'فواتير'];
-
-  void _onNumpadTapped(String value) {
-    setState(() {
-      if (value == '⌫') {
-        _amount =
-            _amount.length > 1 ? _amount.substring(0, _amount.length - 1) : '0';
-      } else if (_amount == '0' && value != '.') {
-        _amount = value;
-      } else {
-        if (value == '.' && _amount.contains('.')) return;
-        _amount += value;
-      }
-    });
-  }
+  final List<Map<String, dynamic>> _categories = [
+    {'name': 'طعام', 'icon': Icons.fastfood},
+    {'name': 'مواصلات', 'icon': Icons.directions_bus},
+    {'name': 'مقاضي', 'icon': Icons.shopping_bag},
+    {'name': 'فواتير', 'icon': Icons.receipt_long},
+  ];
 
   void _saveTransaction() {
-    // حالياً، فقط نطبع البيانات ونغلق الواجهة
-    print('Saving Transaction: Amount: $_amount, Category: $_selectedCategory');
+    final amount = double.tryParse(_amount) ?? 0.0;
+    if (amount == 0.0 || _selectedCategory == null) return;
+
+    final selectedCategoryData =
+        _categories.firstWhere((c) => c['name'] == _selectedCategory);
+
+    // 1. إنشاء المعاملة الجديدة
+    final newTransaction = Transaction(
+      category: _selectedCategory!,
+      icon: selectedCategoryData['icon'],
+      amount: amount,
+      type: TransactionType.expense, // كمثال، كل المعاملات مصروفات
+      date: DateTime.now(),
+    );
+
+    // 2. استخدام Provider للوصول لمركز البيانات وإضافة المعاملة
+    // listen: false لأننا لا نريد إعادة بناء هذا الويدجت عند التغيير
+    Provider.of<AppData>(context, listen: false).addTransaction(newTransaction);
+
     Navigator.pop(context);
   }
-
+  
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -57,50 +68,18 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
     );
   }
 
-  Widget _buildCategoryBubbles() {
-    return Wrap(
-      spacing: 12.0,
-      runSpacing: 12.0,
-      alignment: WrapAlignment.center,
-      children: _categories.map((category) {
-        final isSelected = _selectedCategory == category;
-        return ChoiceChip(
-          label: Text(category),
-          selected: isSelected,
-          onSelected: (selected) {
-            setState(() {
-              _selectedCategory = selected ? category : null;
-            });
-          },
-          backgroundColor: const Color(0xff0d1117),
-          selectedColor: const Color(0xff8952ff),
-          labelStyle: TextStyle(
-              color: isSelected ? Colors.white : Colors.white70,
-              fontWeight: FontWeight.bold),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(
-                  color:
-                      isSelected ? const Color(0xff8952ff) : Colors.white24)),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildSaveButton() {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: _saveTransaction,
-        style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xff8952ff),
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12))),
-        child: const Text('حفظ',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      ),
-    );
+  void _onNumpadTapped(String value) {
+    setState(() {
+      if (value == '⌫') {
+        _amount =
+            _amount.length > 1 ? _amount.substring(0, _amount.length - 1) : '0';
+      } else if (_amount == '0' && value != '.') {
+        _amount = value;
+      } else {
+        if (value == '.' && _amount.contains('.')) return;
+        _amount += value;
+      }
+    });
   }
 
   Widget _buildAmountDisplay() {
@@ -111,6 +90,35 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
       const Text('ريال يمني',
           style: TextStyle(color: Colors.white54, fontSize: 18))
     ]);
+  }
+
+  Widget _buildCategoryBubbles() {
+    return Wrap(
+        spacing: 12.0,
+        runSpacing: 12.0,
+        alignment: WrapAlignment.center,
+        children: _categories.map((category) {
+          final isSelected = _selectedCategory == category['name'];
+          return ChoiceChip(
+              label: Text(category['name']),
+              selected: isSelected,
+              onSelected: (selected) {
+                setState(() {
+                  _selectedCategory = selected ? category['name'] : null;
+                });
+              },
+              backgroundColor: const Color(0xff0d1117),
+              selectedColor: const Color(0xff8952ff),
+              labelStyle: TextStyle(
+                  color: isSelected ? Colors.white : Colors.white70,
+                  fontWeight: FontWeight.bold),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(
+                      color: isSelected
+                          ? const Color(0xff8952ff)
+                          : Colors.white24)));
+        }).toList());
   }
 
   Widget _buildNumpad() {
@@ -141,5 +149,20 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
             child: Text(buttons[index],
                 style: const TextStyle(
                     fontSize: 28, fontWeight: FontWeight.bold))));
+  }
+  
+  Widget _buildSaveButton() {
+    return SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+            onPressed: _saveTransaction,
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff8952ff),
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12))),
+            child: const Text('حفظ',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))));
   }
 }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'features/main_screen/main_screen.dart';
+import 'features/onboarding/screens/onboarding_screen.dart'; // 1. استيراد شاشة البداية
 
 class FinancialApp extends StatelessWidget {
   const FinancialApp({super.key});
@@ -27,7 +27,8 @@ class FinancialApp extends StatelessWidget {
               color: Colors.white),
         ),
       ),
-      home: const MainScreen(),
+      // 2. نجعل شاشة البداية هي الواجهة الرئيسية للتطبيق
+      home: const OnboardingScreen(),
     );
   }
 }

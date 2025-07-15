@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nabd/features/dashboard/widgets/expenses_section.dart';
 import '../widgets/financial_pulse_widget.dart';
 import '../widgets/insight_card.dart';
 import '../widgets/goals_section.dart';
@@ -30,7 +31,7 @@ class DashboardScreen extends StatelessWidget {
             SizedBox(height: 24),
             GoalsSection(),
             SizedBox(height: 24),
-            // ExpensesSection(),
+            ExpensesSection(),
           ],
         ),
       ),

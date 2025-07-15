@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // حزمة لتنسيق الأرقام
+import 'package:intl/intl.dart';
+import 'package:nabd/data/app_data.dart';
+import 'package:nabd/features/transactions/models/transaction_model.dart';
+import 'package:provider/provider.dart'; // حزمة لتنسيق الأرقام
 
-// 1. حولنا الويدجت إلى StatefulWidget
 class ExpensesByCategoryCard extends StatefulWidget {
   const ExpensesByCategoryCard({super.key});
 
@@ -10,89 +12,123 @@ class ExpensesByCategoryCard extends StatefulWidget {
 }
 
 class _ExpensesByCategoryCardState extends State<ExpensesByCategoryCard> {
-  // 2. متغير حالة لتخزين مؤشر العمود المختار
   int? _selectedIndex;
 
-  // بيانات مؤقتة
-  final expenses = [
-    {'name': 'طعام', 'amount': 85000.0, 'color': Colors.blue},
-    {'name': 'مواصلات', 'amount': 40000.0, 'color': Colors.orange},
-    {'name': 'فواتير', 'amount': 30000.0, 'color': Colors.purple},
-    {'name': 'ترفيه', 'amount': 20000.0, 'color': Colors.teal},
-  ];
+  // 1. تعريف خريطة الألوان هنا
+  final Map<String, Color> _categoryColors = {
+    'طعام': Colors.blue,
+    'مواصلات': Colors.orange,
+    'مقاضي': Colors.red,
+    'فواتير': Colors.purple,
+    'ترفيه': Colors.teal,
+    'تسوق': Colors.pink,
+  };
+  final Color _defaultColor = Colors.grey;
 
   @override
   Widget build(BuildContext context) {
-    final maxAmount = expenses.fold<double>(0.0,
-        (max, e) => e['amount'] as double > max ? e['amount'] as double : max);
-
-    // لتنسيق الأرقام مع فواصل (e.g., 85,000)
     final numberFormat = NumberFormat("#,##0", "en_US");
 
-    return Card(
-      color: const Color(0xff161b22),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 3. عرض تفاصيل العمود المختار
-            _buildHeader(numberFormat),
-            const SizedBox(height: 24),
-            SizedBox(
-              height: 150,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: expenses.asMap().entries.map((entry) {
-                  int index = entry.key;
-                  Map<String, dynamic> expense = entry.value;
-                  return _buildBar(
-                    context,
-                    index,
-                    expense['name'] as String,
-                    expense['amount'] as double,
-                    expense['color'] as Color,
-                    (expense['amount'] as double) / maxAmount,
-                  );
-                }).toList(),
-              ),
+    return Consumer<AppData>(
+      builder: (context, appData, child) {
+        final expenseMap = <String, double>{};
+        for (var t in appData.transactions
+            .where((t) => t.type == TransactionType.expense)) {
+          expenseMap.update(t.category, (value) => value + t.amount,
+              ifAbsent: () => t.amount);
+        }
+        final expensesData = expenseMap.entries.toList()
+          ..sort((a, b) => b.value.compareTo(a.value));
+
+        if (expensesData.isEmpty) {
+          return Card(
+            color: const Color(0xff161b22),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: const Padding(
+              padding: EdgeInsets.all(60.0),
+              child: Center(
+                  child: Text('لا توجد بيانات لعرض المخطط',
+                      style: TextStyle(color: Colors.white54))),
             ),
-          ],
-        ),
-      ),
+          );
+        }
+
+        final maxAmount = expensesData.fold<double>(
+            0.0, (max, e) => e.value > max ? e.value : max);
+
+        return Card(
+          color: const Color(0xff161b22),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(numberFormat, expensesData),
+                const SizedBox(height: 24),
+                SizedBox(
+                  height: 150,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: expensesData.asMap().entries.map((entry) {
+                      int index = entry.key;
+                      var expense = entry.value;
+                      // 2. تحديد اللون من الخريطة
+                      final color =
+                          _categoryColors[expense.key] ?? _defaultColor;
+                      return _buildBar(
+                        index,
+                        expense.key,
+                        expense.value,
+                        maxAmount > 0 ? expense.value / maxAmount : 0.0,
+                        color, // 3. تمرير اللون الصحيح
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
-  // ويدجت مساعد لبناء العنوان الذي يعرض التفاصيل
-  Widget _buildHeader(NumberFormat format) {
+  Widget _buildHeader(
+      NumberFormat format, List<MapEntry<String, double>> expensesData) {
+    final Color selectedColor = _selectedIndex != null
+        ? (_categoryColors[expensesData[_selectedIndex!].key] ?? _defaultColor)
+        : Colors.blue;
+
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 300),
       child: _selectedIndex == null
           ? const Text(
               'النفقات حسب الفئة',
-              key: ValueKey('title'), // مفتاح لتمييز الويدجت للأنيميشن
+              key: ValueKey('title'),
               style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.bold),
             )
           : Row(
-              key: ValueKey(_selectedIndex), // مفتاح مختلف عند وجود اختيار
+              key: ValueKey(_selectedIndex),
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  expenses[_selectedIndex!]['name'] as String,
+                  expensesData[_selectedIndex!].key,
                   style: const TextStyle(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  '${format.format(expenses[_selectedIndex!]['amount'])} ريال',
+                  '${format.format(expensesData[_selectedIndex!].value)} ريال',
                   style: TextStyle(
-                      color: expenses[_selectedIndex!]['color'] as Color,
+                      color: selectedColor,
                       fontSize: 18,
                       fontWeight: FontWeight.bold),
                 ),
@@ -101,30 +137,25 @@ class _ExpensesByCategoryCardState extends State<ExpensesByCategoryCard> {
     );
   }
 
-  // 4. ويدجت مساعد لبناء عمود واحد تفاعلي
-  Widget _buildBar(BuildContext context, int index, String name, double amount,
-      Color color, double heightFactor) {
+  Widget _buildBar(
+      int index, String name, double amount, double heightFactor, Color color) {
     final isSelected = _selectedIndex == index;
 
     return GestureDetector(
-      // 5. أضفنا GestureDetector للاستجابة للمسة
       onTap: () {
         setState(() {
-          // إذا ضغط على نفس العمود مرة أخرى، يلغى الاختيار
           _selectedIndex = isSelected ? null : index;
         });
       },
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          // 6. استخدمنا AnimatedContainer لتكبير العمود بسلاسة
           AnimatedContainer(
             duration: const Duration(milliseconds: 200),
-            width: isSelected ? 45 : 40, // يزيد العرض عند الاختيار
+            width: isSelected ? 45 : 40,
             height: 120 * heightFactor,
             decoration: BoxDecoration(
-              color:
-                  isSelected ? color.withOpacity(1.0) : color.withOpacity(0.7),
+              color: isSelected ? color : color.withOpacity(0.7),
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(6)),
             ),

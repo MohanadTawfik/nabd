@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nabd/features/goals/models/goal_model.dart';
 
 class AddGoalScreen extends StatefulWidget {
   const AddGoalScreen({super.key});
@@ -12,23 +13,46 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
   IconData _selectedIcon = Icons.star;
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
+  Color _selectedColor = Colors.blue.shade300;
 
-  // قائمة الأيقونات المتاحة للاختيار
-  final List<IconData> _icons = [
-    Icons.directions_car,
-    Icons.airplanemode_active,
-    Icons.laptop_mac,
-    Icons.home,
-    Icons.school,
-    Icons.camera_alt,
-    Icons.phone_android,
+  final List<Map<String, dynamic>> _icons = [
+    {'icon': Icons.directions_car, 'color': Colors.blue.shade300},
+    {'icon': Icons.airplanemode_active, 'color': Colors.teal.shade300},
+    {'icon': Icons.laptop_mac, 'color': Colors.purple.shade300},
+    {'icon': Icons.home, 'color': Colors.green.shade300},
+    {'icon': Icons.school, 'color': Colors.orange.shade300},
+    {'icon': Icons.camera_alt, 'color': Colors.red.shade300},
+    {'icon': Icons.phone_android, 'color': Colors.grey.shade400},
+    {'icon': Icons.star, 'color': Colors.yellow.shade600},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // اختيار أول أيقونة بشكل افتراضي
+    _selectedIcon = _icons[0]['icon'] as IconData;
+    _selectedColor = _icons[0]['color'] as Color;
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _amountController.dispose();
     super.dispose();
+  }
+
+  void _saveGoal() {
+    if (_formKey.currentState!.validate()) {
+      // 2. إنشاء كائن الهدف الجديد من البيانات المدخلة
+      final newGoal = Goal(
+        name: _nameController.text,
+        icon: _selectedIcon,
+        totalAmount: double.tryParse(_amountController.text) ?? 0.0,
+        color: _selectedColor,
+      );
+      // 3. إرجاع الهدف الجديد إلى الشاشة السابقة
+      Navigator.pop(context, newGoal);
+    }
   }
 
   @override
@@ -44,14 +68,11 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. اختيار الأيقونة
               const Text('اختر رمزاً لهدفك',
                   style: TextStyle(color: Colors.white, fontSize: 18)),
               const SizedBox(height: 16),
               _buildIconSelector(),
               const SizedBox(height: 32),
-
-              // 2. اسم الهدف
               TextFormField(
                 controller: _nameController,
                 style: const TextStyle(color: Colors.white),
@@ -62,8 +83,6 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
                     : null,
               ),
               const SizedBox(height: 24),
-
-              // 3. المبلغ الإجمالي
               TextFormField(
                 controller: _amountController,
                 style: const TextStyle(color: Colors.white),
@@ -74,21 +93,13 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
                     : null,
               ),
               const SizedBox(height: 40),
-
-              // 4. زر الحفظ
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      // منطق الحفظ (حالياً فقط نعود للشاشة السابقة)
-                      print(
-                          'Goal Saved: Name: ${_nameController.text}, Amount: ${_amountController.text}, Icon: $_selectedIcon');
-                      Navigator.pop(context);
-                    }
-                  },
+                  onPressed: _saveGoal, // 4. استدعاء دالة الحفظ الجديدة
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xff8952ff),
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
@@ -105,7 +116,6 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
     );
   }
 
-  // ويدجت مساعد لبناء حقل الإدخال
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
@@ -120,7 +130,6 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
     );
   }
 
-  // ويدجت مساعد لبناء شبكة اختيار الأيقونات
   Widget _buildIconSelector() {
     return GridView.builder(
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -129,12 +138,15 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemBuilder: (context, index) {
-        final icon = _icons[index];
+        final iconData = _icons[index];
+        final icon = iconData['icon'] as IconData;
+        final color = iconData['color'] as Color;
         final isSelected = _selectedIcon == icon;
         return GestureDetector(
           onTap: () {
             setState(() {
               _selectedIcon = icon;
+              _selectedColor = color;
             });
           },
           child: AnimatedContainer(
@@ -143,14 +155,10 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
               color: const Color(0xff161b22),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color:
-                    isSelected ? const Color(0xff8952ff) : Colors.transparent,
-                width: 2,
-              ),
+                  color: isSelected ? color : Colors.transparent, width: 2),
             ),
             child: Icon(icon,
-                color: isSelected ? const Color(0xff8952ff) : Colors.white70,
-                size: 32),
+                color: isSelected ? color : Colors.white70, size: 32),
           ),
         );
       },
