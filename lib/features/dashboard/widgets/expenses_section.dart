@@ -5,8 +5,9 @@ import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:nabd/features/transactions/screens/transactions_screen.dart';
 import 'package:provider/provider.dart';
 
+
 class ExpensesSection extends StatelessWidget {
-  const ExpensesSection({super.key});
+const ExpensesSection({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -38,11 +39,11 @@ class ExpensesSection extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('أكبر النفقات هذا الشهر',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold)),
+                Text('أكبر النفقات هذا الشهر',
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleLarge
+                        ?.copyWith(fontSize: 20)),
                 // 2. إضافة زر "عرض الكل"
                 TextButton(
                   onPressed: () {
@@ -52,15 +53,15 @@ class ExpensesSection extends StatelessWidget {
                           builder: (context) => const TransactionsScreen()),
                     );
                   },
-                  child: const Text('عرض الكل',
-                      style: TextStyle(color: Color(0xff8952ff))),
+                  child: Text('عرض الكل',
+                      style: TextStyle(color: Theme.of(context).primaryColor)),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             if (expensesData.isEmpty)
               Card(
-                color: const Color(0xff161b22),
+                color: Theme.of(context).cardColor,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16)),
                 child: const Padding(
@@ -72,7 +73,7 @@ class ExpensesSection extends StatelessWidget {
               )
             else
               Card(
-                color: const Color(0xff161b22),
+                color: Theme.of(context).cardColor,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16)),
                 child: Padding(
@@ -123,12 +124,19 @@ class ExpensesSection extends StatelessWidget {
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text(name, style: const TextStyle(color: Colors.white, fontSize: 16)),
+          Text(
+            name,
+            // style: Theme.of(context)
+            //     .textTheme
+            //     .titleMedium
+            //     ?.copyWith(fontSize: 16)
+          ),
           Text('${format.format(amount)} ريال',
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16))
+            // style: Theme.of(context)
+            //     .textTheme
+            //     .titleMedium
+            //     ?.copyWith(fontSize: 16)
+          ),
         ]),
         const SizedBox(height: 8),
         LinearProgressIndicator(

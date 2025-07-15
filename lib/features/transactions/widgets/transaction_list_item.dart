@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
+import 'package:nabd/widgets/confirmation_dialog.dart';
+import 'package:provider/provider.dart';
 
 class TransactionListItem extends StatelessWidget {
   final Transaction transaction;
@@ -16,24 +19,41 @@ class TransactionListItem extends StatelessWidget {
     final color = isExpense ? Colors.red.shade400 : Colors.green.shade400;
     final format = NumberFormat("#,##0", "en_US");
 
-    return Card(
-      color: const Color(0xff161b22),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withOpacity(0.15),
-          child: Icon(transaction.icon, color: color),
-        ),
-        title: Text(transaction.category,
-            style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold)),
-        subtitle: Text(DateFormat('hh:mm a', 'ar').format(transaction.date),
-            style: const TextStyle(color: Colors.white70)),
-        trailing: Text(
-          '${isExpense ? '-' : '+'}${format.format(transaction.amount)}',
-          style: TextStyle(
-              color: color, fontSize: 16, fontWeight: FontWeight.bold),
+    // 2. نغلف البطاقة بـ GestureDetector للاستجابة للضغط المطول
+    return GestureDetector(
+      onLongPress: () {
+        // 3. إظهار نافذة التأكيد عند الضغط المطول
+        showDialog(
+          context: context,
+          builder: (BuildContext dialogContext) {
+            return ConfirmationDialog(
+              title: 'حذف المعاملة',
+              content:
+                  'هل أنت متأكد من رغبتك في حذف هذه المعاملة؟ لا يمكن التراجع عن هذا الإجراء.',
+              onConfirm: () {
+                // 4. استدعاء دالة الحذف من AppData
+                Provider.of<AppData>(context, listen: false)
+                    .deleteTransaction(transaction);
+                Navigator.of(dialogContext).pop(); // إغلاق نافذة التأكيد
+              },
+            );
+          },
+        );
+      },
+      child: Card(
+        // 1. استخدام لون البطاقة من الثيم
+        color: Theme.of(context).cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: color.withOpacity(0.15),
+            child: Icon(transaction.icon, color: color),
+          ),
+          title: Text(transaction.category,
+              style: Theme.of(context).textTheme.titleMedium),
+          subtitle: Text(DateFormat('hh:mm a', 'ar').format(transaction.date),
+              style: Theme.of(context).textTheme.bodyMedium),
         ),
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nabd/features/dashboard/widgets/budgets_card.dart';
 import 'package:nabd/features/dashboard/widgets/expenses_section.dart';
 import '../widgets/financial_pulse_widget.dart';
 import '../widgets/insight_card.dart';
@@ -28,6 +29,9 @@ class DashboardScreen extends StatelessWidget {
             FinancialPulseWidget(),
             SizedBox(height: 24),
             InsightCard(),
+            SizedBox(height: 24),
+            // 2. إضافة بطاقة الميزانيات الجديدة إلى لوحة التحكم
+            BudgetsCard(),
             SizedBox(height: 24),
             GoalsSection(),
             SizedBox(height: 24),

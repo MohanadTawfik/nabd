@@ -6,7 +6,6 @@ import 'package:nabd/features/goals/widgets/goal_card_widget.dart';
 import 'package:provider/provider.dart';
 import 'add_goal_screen.dart';
 
-
 class GoalsScreen extends StatelessWidget {
   const GoalsScreen({super.key});
 
@@ -24,8 +23,7 @@ class GoalsScreen extends StatelessWidget {
         title: const Text('أهدافك'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.add_circle_outline,
-                size: 28, color: Colors.white),
+            icon: const Icon(Icons.add_circle_outline, size: 28),
             onPressed: () => _navigateAndAddGoal(context),
           ),
         ],
@@ -40,22 +38,18 @@ class GoalsScreen extends StatelessWidget {
                     style: TextStyle(color: Colors.white70, fontSize: 16)));
           }
 
-          // 2. نغلف القائمة بـ AnimationLimiter
           return AnimationLimiter(
             child: ListView.builder(
               padding: const EdgeInsets.all(16.0),
               itemCount: goals.length,
               itemBuilder: (context, index) {
                 final goal = goals[index];
-                // 3. نغلف كل عنصر في القائمة بويدجتس الأنيميشن
                 return AnimationConfiguration.staggeredList(
                   position: index,
                   duration: const Duration(milliseconds: 500),
                   child: SlideAnimation(
-                    // 4. أنيميشن الانزلاق
                     verticalOffset: 50.0,
                     child: FadeInAnimation(
-                      // 5. أنيميشن التلاشي للداخل
                       child: Padding(
                         padding: const EdgeInsets.only(bottom: 16.0),
                         child: GestureDetector(
@@ -68,7 +62,11 @@ class GoalsScreen extends StatelessWidget {
                               ),
                             );
                           },
-                          child: GoalCardWidget(goal: goal),
+                          // 1. نغلف البطاقة بـ Hero ونعطيه وسماً فريداً
+                          child: Hero(
+                            tag: 'goal_card_${goal.name}', // وسم فريد لكل هدف
+                            child: GoalCardWidget(goal: goal),
+                          ),
                         ),
                       ),
                     ),

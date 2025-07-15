@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:provider/provider.dart';
-
+import 'package:uuid/uuid.dart'; 
 class AddTransactionPanel extends StatefulWidget {
   const AddTransactionPanel({super.key});
   @override
@@ -12,10 +12,8 @@ class AddTransactionPanel extends StatefulWidget {
 class _AddTransactionPanelState extends State<AddTransactionPanel> {
   String _amount = '0';
   String? _selectedCategoryName;
-  // 1. متغير جديد لتتبع نوع المعاملة (مصروف أو دخل)
   TransactionType _selectedType = TransactionType.expense;
 
-  // 2. قوائم منفصلة لفئات المصروف والدخل
   final List<Map<String, dynamic>> _expenseCategories = [
     {'name': 'طعام', 'icon': Icons.fastfood},
     {'name': 'مواصلات', 'icon': Icons.directions_bus},
@@ -39,10 +37,11 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
         categories.firstWhere((c) => c['name'] == _selectedCategoryName);
 
     final newTransaction = Transaction(
+      id: const Uuid().v4(),
       category: _selectedCategoryName!,
       icon: selectedCategoryData['icon'],
       amount: amount,
-      type: _selectedType, // 3. استخدام النوع المختار
+      type: _selectedType,
       date: DateTime.now(),
     );
 
@@ -50,84 +49,123 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
     Navigator.pop(context);
   }
 
+  // 1. دالة ذكية لتحديد اللون الرئيسي بناءً على النوع
+  Color _getTypeColor(BuildContext context) {
+    return _selectedType == TransactionType.expense
+        ? Colors.red.shade400
+        : Colors.green.shade400;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(20),
+    final typeColor = _getTypeColor(context);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+          20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-              width: 40,
-              height: 5,
-              decoration: BoxDecoration(
-                  color: Colors.grey.shade800,
-                  borderRadius: BorderRadius.circular(12))),
+            width: 40,
+            height: 5,
+            decoration: BoxDecoration(
+              color: Theme.of(context).dividerColor,
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
           const SizedBox(height: 24),
-
-          // 4. إضافة أزرار التبديل بين مصروف ودخل
-          _buildTypeSelector(),
+          _buildTypeSelector(context),
           const SizedBox(height: 24),
-
-          _buildAmountDisplay(),
+          _buildAmountDisplay(context, typeColor),
           const SizedBox(height: 24),
-          _buildCategoryBubbles(),
+          _buildCategoryBubbles(context, typeColor),
           const SizedBox(height: 24),
-          _buildNumpad(),
+          _buildNumpad(context),
           const SizedBox(height: 16),
-          _buildSaveButton(),
+          SizedBox(
+            width: double.infinity,
+            // 2. زر الحفظ الآن يأخذ لونه من النوع المختار
+            child: ElevatedButton(
+              onPressed: _saveTransaction,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: typeColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text('حفظ'),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  // ويدجت جديد لبناء أزرار التبديل
-  Widget _buildTypeSelector() {
+  Widget _buildTypeSelector(BuildContext context) {
     return Container(
+      padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xff0d1117),
+        color: Theme.of(context).scaffoldBackgroundColor,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: ToggleButtons(
-        isSelected: [
-          _selectedType == TransactionType.expense,
-          _selectedType == TransactionType.income
+      child: Row(
+        children: [
+          _buildTypeButton(context, 'مصروف', TransactionType.expense),
+          _buildTypeButton(context, 'دخل', TransactionType.income),
         ],
-        onPressed: (index) {
+      ),
+    );
+  }
+
+  Widget _buildTypeButton(
+      BuildContext context, String text, TransactionType type) {
+    final bool isSelected = _selectedType == type;
+    // 3. الألوان الآن ذكية
+    final Color selectedColor = type == TransactionType.expense
+        ? Colors.red.shade400
+        : Colors.green.shade400;
+
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
           setState(() {
-            _selectedType =
-                index == 0 ? TransactionType.expense : TransactionType.income;
-            _selectedCategoryName = null; // إعادة تعيين الفئة عند تغيير النوع
+            _selectedType = type;
+            _selectedCategoryName = null;
           });
         },
-        color: Colors.white70,
-        selectedColor: Colors.white,
-        fillColor: _selectedType == TransactionType.expense
-            ? Colors.red.withOpacity(0.5)
-            : Colors.green.withOpacity(0.5),
-        splashColor: const Color(0xff8952ff).withOpacity(0.2),
-        borderRadius: BorderRadius.circular(12),
-        borderWidth: 0,
-        selectedBorderColor: _selectedType == TransactionType.expense
-            ? Colors.red
-            : Colors.green,
-        children: const [
-          Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24),
-              child: Text('مصروف')),
-          Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24),
-              child: Text('دخل')),
-        ],
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? selectedColor : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Text(
+            text,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: isSelected
+                  ? Colors.white
+                  : Theme.of(context).textTheme.bodyMedium?.color,
+            ),
+          ),
+        ),
       ),
     );
   }
 
-  // تم تحديث هذا الويدجت ليعرض الفئات الصحيحة
-  Widget _buildCategoryBubbles() {
+  Widget _buildCategoryBubbles(BuildContext context, Color typeColor) {
     final categories = _selectedType == TransactionType.expense
         ? _expenseCategories
         : _incomeCategories;
+    final chipTheme = Theme.of(context).chipTheme;
+
     return Wrap(
       spacing: 12.0,
       runSpacing: 12.0,
@@ -142,16 +180,18 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
               _selectedCategoryName = selected ? category['name'] : null;
             });
           },
-          backgroundColor: const Color(0xff0d1117),
-          selectedColor: const Color(0xff8952ff),
-          labelStyle: TextStyle(
-              color: isSelected ? Colors.white : Colors.white70,
-              fontWeight: FontWeight.bold),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-              side: BorderSide(
-                  color:
-                      isSelected ? const Color(0xff8952ff) : Colors.white24)),
+          backgroundColor: chipTheme.backgroundColor,
+          // 4. الفئة المختارة تأخذ لون النوع (أحمر أو أخضر)
+          selectedColor: typeColor,
+          labelStyle: isSelected
+              ? const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.bold)
+              : chipTheme.labelStyle,
+          // shape: isSelected
+          //     ? RoundedRectangleBorder(
+          //         // borderRadius: BorderRadius.circular(12),
+          //         side: BorderSide(color: typeColor, width: 1.5))
+          //     : chipTheme.shape as OutlinedBorder?,
         );
       }).toList(),
     );
@@ -171,17 +211,21 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
     });
   }
 
-  Widget _buildAmountDisplay() {
+  Widget _buildAmountDisplay(BuildContext context, Color typeColor) {
     return Column(children: [
+      // 5. الرقم أيضاً يأخذ لون النوع
       Text(_amount,
-          style: const TextStyle(
-              color: Colors.white, fontSize: 52, fontWeight: FontWeight.bold)),
-      const Text('ريال يمني',
-          style: TextStyle(color: Colors.white54, fontSize: 18))
+          style: Theme.of(context)
+              .textTheme
+              .titleLarge
+              ?.copyWith(fontSize: 52, color: typeColor)),
+      Text('ريال يمني',
+          style:
+              Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 18)),
     ]);
   }
 
-  Widget _buildNumpad() {
+  Widget _buildNumpad(BuildContext context) {
     final buttons = [
       '1',
       '2',
@@ -197,32 +241,20 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
       '⌫'
     ];
     return GridView.builder(
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3, childAspectRatio: 1.5),
-        itemCount: buttons.length,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemBuilder: (context, index) => TextButton(
-            onPressed: () => _onNumpadTapped(buttons[index]),
-            style: TextButton.styleFrom(
-                foregroundColor: Colors.white, shape: const CircleBorder()),
-            child: Text(buttons[index],
-                style: const TextStyle(
-                    fontSize: 28, fontWeight: FontWeight.bold))));
-  }
-
-  Widget _buildSaveButton() {
-    return SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-            onPressed: _saveTransaction,
-            style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff8952ff),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12))),
-            child: const Text('حفظ',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold))));
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 3, childAspectRatio: 1.5),
+      itemCount: buttons.length,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemBuilder: (context, index) => TextButton(
+        onPressed: () => _onNumpadTapped(buttons[index]),
+        style: TextButton.styleFrom(
+          foregroundColor: Theme.of(context).textTheme.titleLarge?.color,
+          shape: const CircleBorder(),
+        ),
+        child: Text(buttons[index],
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+      ),
+    );
   }
 }

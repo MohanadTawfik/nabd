@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:nabd/data/app_data.dart';
+import 'package:provider/provider.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/settings_item.dart';
@@ -8,6 +10,10 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    // 1. نستخدم Provider.of للوصول إلى AppData
+    final appData = Provider.of<AppData>(context);
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('الإعدادات'),
@@ -68,12 +74,21 @@ class SettingsScreen extends StatelessWidget {
                   title: 'الإشعارات',
                   onTap: () {},
                 ),
+                // 2. تحديث عنصر المظهر ليكون تفاعلياً
                 SettingsItem(
                   icon: Icons.color_lens_outlined,
-                  title: 'المظهر',
-                  trailing: const Text('داكن',
-                      style: TextStyle(color: Colors.white70)),
-                  onTap: () {},
+                  title: 'المظهر الداكن',
+                  // 3. إضافة Switch للتحكم في المظهر
+                  trailing: Switch(
+                    value: appData.themeMode == ThemeMode.dark,
+                    onChanged: (value) {
+                      // 4. استدعاء الدالة لتغيير المظهر عند الضغط
+                      appData.changeTheme(
+                          value ? ThemeMode.dark : ThemeMode.light);
+                    },
+                    activeColor: const Color(0xff8952ff),
+                  ),
+                  onTap: () {}, // لا نحتاج للضغط على الصف نفسه
                 ),
                 SettingsItem(
                   icon: Icons.security_outlined,

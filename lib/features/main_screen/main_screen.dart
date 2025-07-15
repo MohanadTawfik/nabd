@@ -103,14 +103,14 @@ class _MainScreenState extends State<MainScreen>
                 context: context,
                 isScrollControlled: true,
                 backgroundColor: const Color(0xff161b22),
-                
                 shape: const RoundedRectangleBorder(
                   borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
                 ),
                 builder: (context) => const AddTransactionPanel(),
               );
             },
-            backgroundColor: const Color(0xff8952ff),
+            // 1. استخدام لون الثيم الأساسي
+            backgroundColor: Theme.of(context).primaryColor,
             child: const Icon(Icons.add, color: Colors.white54, size: 30),
           ),
           floatingActionButtonLocation:
@@ -118,7 +118,9 @@ class _MainScreenState extends State<MainScreen>
           bottomNavigationBar: BottomAppBar(
             shape: const CircularNotchedRectangle(),
             notchMargin: 8.0,
-            color: const Color(0xff161b22).withOpacity(0.8),
+            // 2. استخدام لون الثيم للشريط السفلي
+            color: Theme.of(context).bottomAppBarTheme.color,
+            elevation: Theme.of(context).bottomAppBarTheme.elevation,
             child: SizedBox(
               height: 60,
               child: Row(
@@ -142,8 +144,10 @@ class _MainScreenState extends State<MainScreen>
     return IconButton(
       icon: Icon(
         icon,
-        color:
-            _selectedIndex == index ? const Color(0xff8952ff) : Colors.white54,
+        // 3. استخدام لون الثيم للأيقونات
+        color: _selectedIndex == index
+            ? Theme.of(context).primaryColor
+            : Theme.of(context).iconTheme.color,
       ),
       onPressed: () => _onItemTapped(index),
     );
