@@ -8,11 +8,6 @@ class AppData extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.dark;
   ThemeMode get themeMode => _themeMode;
 
-  // 2. دالة لتغيير المظهر وإخبار المستمعين
-  void changeTheme(ThemeMode themeMode) {
-    _themeMode = themeMode;
-    notifyListeners();
-  }
 
   final List<Transaction> _transactions = [
     Transaction(
@@ -45,6 +40,12 @@ class AppData extends ChangeNotifier {
         savedAmount: 750000.0,
         totalAmount: 1000000.0,
         color: Colors.blue.shade300),
+    Goal(
+        name: 'السفر إلى سقطرى',
+        icon: Icons.airplanemode_active,
+        savedAmount: 200000.0,
+        totalAmount: 500000.0,
+        color: Colors.teal.shade300),
   ];
 
   final List<Budget> _budgets = [
@@ -88,9 +89,33 @@ class AppData extends ChangeNotifier {
     return 'يبدو أن معظم إنفاقك هذا الشهر يذهب إلى فئة "${highestSpendingCategory.key}". ما رأيك في مراجعة هذه الفئة؟';
   }
 
- 
+  // 2. دالة لتغيير المظهر وإخبار المستمعين
+  void changeTheme(ThemeMode themeMode) {
+    _themeMode = themeMode;
+    notifyListeners();
+  }
+
+
   void addTransaction(Transaction transaction) {
     _transactions.add(transaction);
+    _updateBudgets();
+    notifyListeners();
+  }
+  
+  // 1. دالة جديدة لتحديث معاملة موجودة
+  void updateTransaction(Transaction updatedTransaction) {
+    // البحث عن مؤشر المعاملة القديمة باستخدام الـ ID الفريد
+    final index =
+        _transactions.indexWhere((t) => t.id == updatedTransaction.id);
+    if (index != -1) {
+      _transactions[index] = updatedTransaction;
+      _updateBudgets();
+      notifyListeners();
+    }
+  }
+
+  void deleteTransaction(Transaction transaction) {
+    _transactions.remove(transaction);
     _updateBudgets();
     notifyListeners();
   }
@@ -113,11 +138,10 @@ class AppData extends ChangeNotifier {
       notifyListeners();
     }
   }
-
-  // 1. دالة جديدة لحذف معاملة
-  void deleteTransaction(Transaction transaction) {
-    _transactions.remove(transaction);
-    _updateBudgets();
+  
+  // 1. دالة جديدة لحذف هدف
+  void deleteGoal(Goal goal) {
+    _goals.remove(goal);
     notifyListeners();
   }
 

@@ -3,8 +3,14 @@ import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart'; 
+
+
+
 class AddTransactionPanel extends StatefulWidget {
-  const AddTransactionPanel({super.key});
+  // 1. متغير جديد لاستقبال المعاملة المراد تعديلها
+  final Transaction? transactionToEdit;
+  const AddTransactionPanel({super.key, this.transactionToEdit});
+
   @override
   State<AddTransactionPanel> createState() => _AddTransactionPanelState();
 }
@@ -13,6 +19,8 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
   String _amount = '0';
   String? _selectedCategoryName;
   TransactionType _selectedType = TransactionType.expense;
+  // 2. متغير لتحديد إذا كنا في وضع التعديل
+  late bool _isEditing;
 
   final List<Map<String, dynamic>> _expenseCategories = [
     {'name': 'طعام', 'icon': Icons.fastfood},
@@ -26,6 +34,24 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
     {'name': 'أعمال حرة', 'icon': Icons.work},
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    // 3. تهيئة الحالة بناءً على وجود معاملة للتعديل
+    _isEditing = widget.transactionToEdit != null;
+    if (_isEditing) {
+      final t = widget.transactionToEdit!;
+      _amount = t.amount.toStringAsFixed(0);
+      _selectedCategoryName = t.category;
+      _selectedType = t.type;
+    } else {
+      _amount = '0';
+      _selectedType = TransactionType.expense;
+      _selectedCategoryName = null;
+    }
+  }
+
+
   void _saveTransaction() {
     final amount = double.tryParse(_amount) ?? 0.0;
     if (amount == 0.0 || _selectedCategoryName == null) return;
@@ -36,18 +62,26 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
     final selectedCategoryData =
         categories.firstWhere((c) => c['name'] == _selectedCategoryName);
 
-    final newTransaction = Transaction(
-      id: const Uuid().v4(),
+    // 4. إنشاء المعاملة الجديدة أو تحديث القديمة
+    final transaction = Transaction(
+      id: _isEditing ? widget.transactionToEdit!.id : const Uuid().v4(),
       category: _selectedCategoryName!,
       icon: selectedCategoryData['icon'],
       amount: amount,
       type: _selectedType,
-      date: DateTime.now(),
+      date: _isEditing ? widget.transactionToEdit!.date : DateTime.now(),
     );
 
-    Provider.of<AppData>(context, listen: false).addTransaction(newTransaction);
+    final appData = Provider.of<AppData>(context, listen: false);
+    if (_isEditing) {
+      appData.updateTransaction(transaction);
+    } else {
+      appData.addTransaction(transaction);
+    }
+
     Navigator.pop(context);
   }
+  
 
   // 1. دالة ذكية لتحديد اللون الرئيسي بناءً على النوع
   Color _getTypeColor(BuildContext context) {

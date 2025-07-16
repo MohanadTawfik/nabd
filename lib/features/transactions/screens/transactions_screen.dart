@@ -1,11 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:nabd/data/app_data.dart';
+import 'package:nabd/features/add_transaction/widgets/add_transaction_panel.dart';
+import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:nabd/features/transactions/widgets/transaction_list_item.dart';
 import 'package:provider/provider.dart';
 
 class TransactionsScreen extends StatelessWidget {
   const TransactionsScreen({super.key});
+
+  // 2. دالة جديدة لفتح لوحة التعديل
+  void _showEditPanel(BuildContext context, Transaction transaction) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).cardColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      // 3. نمرر المعاملة الحالية إلى اللوحة
+      builder: (context) => AddTransactionPanel(transactionToEdit: transaction),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +32,6 @@ class TransactionsScreen extends StatelessWidget {
       body: Consumer<AppData>(
         builder: (context, appData, child) {
           final transactions = appData.transactions;
-          // ترتيب المعاملات من الأحدث إلى الأقدم
           transactions.sort((a, b) => b.date.compareTo(a.date));
 
           if (transactions.isEmpty) {
@@ -31,34 +46,34 @@ class TransactionsScreen extends StatelessWidget {
             itemCount: transactions.length,
             itemBuilder: (context, index) {
               final transaction = transactions[index];
-              // منطق لإضافة عنوان التاريخ عند بداية كل يوم جديد
               bool showDateHeader = true;
               if (index > 0) {
                 final prevTransaction = transactions[index - 1];
                 showDateHeader =
-                    transaction.date.day != prevTransaction.date.day ||
-                        transaction.date.month != prevTransaction.date.month ||
-                        transaction.date.year != prevTransaction.date.year;
+                    transaction.date.day != prevTransaction.date.day;
               }
 
-              if (showDateHeader) {
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (showDateHeader)
                     Padding(
                       padding: const EdgeInsets.only(
                           top: 16.0, right: 16.0, bottom: 8.0),
-                      child: Text(
-                        _formatDateHeader(transaction.date),
-                        style: const TextStyle(
-                            color: Colors.white70, fontWeight: FontWeight.bold),
-                      ),
+                      child: Text(_formatDateHeader(transaction.date),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.bold)),
                     ),
-                    TransactionListItem(transaction: transaction),
-                  ],
-                );
-              }
-              return TransactionListItem(transaction: transaction);
+                  // 4. نغلف العنصر بـ InkWell لجعله قابلاً للضغط
+                  InkWell(
+                    onTap: () => _showEditPanel(context, transaction),
+                    borderRadius: BorderRadius.circular(12),
+                    child: TransactionListItem(transaction: transaction),
+                  ),
+                ],
+              );
             },
           );
         },

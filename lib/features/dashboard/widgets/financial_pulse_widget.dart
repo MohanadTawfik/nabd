@@ -1,8 +1,10 @@
+import 'package:animated_digit/animated_digit.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:nabd/data/app_data.dart';
 import 'package:provider/provider.dart';
 import 'package:simple_gradient_text/simple_gradient_text.dart';
+import 'dart:ui' as ui;
 
 // 1. أعدنا الويدجت إلى StatefulWidget مع SingleTickerProviderStateMixin
 class FinancialPulseWidget extends StatefulWidget {
@@ -101,12 +103,21 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
                   const Text('رصيدك الحالي',
                       style: TextStyle(color: Colors.white70, fontSize: 18)),
                   const SizedBox(height: 8),
-                  // 5. استخدام حزمة النص المتدرج لإضافة لمسة جمالية
-                  GradientText(
-                    format.format(balance),
-                    style: const TextStyle(
-                        fontSize: 40, fontWeight: FontWeight.bold),
-                    colors: const [Colors.white, Colors.white70],
+
+                  Directionality(
+                    // 2. هذا هو الإصلاح: نحدد بوضوح أننا نريد TextDirection من مكتبة ui
+                    textDirection: ui.TextDirection.ltr,
+                    child: AnimatedDigitWidget(
+                      value: balance,
+                      textStyle: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 40,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Tajawal'),
+                      fractionDigits: 0,
+                      duration: const Duration(milliseconds: 500),
+                      enableSeparator: true,
+                    ),
                   ),
                   const Text('ريال يمني',
                       style: TextStyle(color: Colors.white70, fontSize: 16)),
