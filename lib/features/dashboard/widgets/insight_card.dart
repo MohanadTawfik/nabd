@@ -57,7 +57,7 @@ class InsightCard extends StatelessWidget {
                         style: Theme.of(context)
                             .textTheme
                             .titleMedium
-                            ?.copyWith(fontSize: 16),
+                            
                       ),
                       const SizedBox(height: 4),
                       // 3. عرض النصيحة الديناميكية

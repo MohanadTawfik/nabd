@@ -30,7 +30,12 @@ class ConfirmationDialog extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.red.shade400,
             foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
+          
           onPressed: onConfirm,
           child: const Text('تأكيد الحذف'),
         ),

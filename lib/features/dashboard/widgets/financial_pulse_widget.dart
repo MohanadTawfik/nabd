@@ -2,6 +2,7 @@ import 'package:animated_digit/animated_digit.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:nabd/data/app_data.dart';
+import 'package:nabd/theme/app_themes.dart';
 import 'package:provider/provider.dart';
 import 'package:simple_gradient_text/simple_gradient_text.dart';
 import 'dart:ui' as ui;
@@ -19,6 +20,7 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
   // 2. أعدنا متحكم الأنيميشن
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
+  
 
   @override
   void initState() {
@@ -39,14 +41,9 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
     _controller.dispose();
     super.dispose();
   }
-
-  // 1. دالة ذكية لتحديد اللون بناءً على نسبة الإنفاق
-  List<Color> _getPulseColors(double expenseRatio) {
-    // Color.lerp تقوم بالدمج بين لونين بناءً على نسبة
-    // إذا كانت النسبة 0 (لم يصرف شيء)، يكون اللون أخضر بالكامل
-    // إذا كانت النسبة 1 (صرف كل دخله)، يكون اللون أحمر بالكامل
-    // وما بينهما هو تدرج جميل
-    final color = Color.lerp(Colors.green.shade400, Colors.red.shade400,
+List<Color> _getPulseColors(double expenseRatio) {
+    // الآن نستخدم الألوان المعرفة في الثيم
+    final color = Color.lerp(AppThemes.incomeColor, AppThemes.expenseColor,
         expenseRatio.clamp(0.0, 1.0))!;
     return [color.withOpacity(0.8), color];
   }
@@ -55,17 +52,16 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
   Widget build(BuildContext context) {
     return Consumer<AppData>(
       builder: (context, appData, child) {
-
+        final expenseRatio = appData.totalIncome > 0
+            ? appData.totalExpense / appData.totalIncome
+            : 0.0;
+        final pulseColors = _getPulseColors(expenseRatio);
         final score = appData.financialHealthScore;
         final format = NumberFormat("#,##0", "en_US");
         final balance = appData.currentBalance;
 
         // 2. حساب نسبة الإنفاق (المصروف / الدخل)
-        final expenseRatio = appData.totalIncome > 0
-            ? appData.totalExpense / appData.totalIncome
-            : 0.0;
-        final pulseColors = _getPulseColors(expenseRatio);
-
+       
         return AnimatedBuilder(
           animation: _controller,
           builder: (context, animChild) {
@@ -92,8 +88,7 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
               ),
               boxShadow: [
                 BoxShadow(
-                  color: pulseColors.last
-                      .withOpacity(0.4), // الظل أيضاً يأخذ اللون الجديد
+                  color: pulseColors.last.withOpacity(0.4), // الظل أيضاً يتغير
                   blurRadius: 20,
                   spreadRadius: 2,
                 ),
@@ -111,8 +106,8 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
                     Icon(Icons.local_florist,
                         color: Colors.green.withOpacity(0.5), size: 24),
 
-                  const Text('رصيدك الحالي',
-                      style: TextStyle(color: Colors.white70, fontSize: 18)),
+                  Text('رصيدك الحالي',
+                      style: Theme.of(context).textTheme.bodyMedium),
                   const SizedBox(height: 8),
 
                   Directionality(
@@ -120,18 +115,17 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
                     textDirection: ui.TextDirection.ltr,
                     child: AnimatedDigitWidget(
                       value: balance,
-                      textStyle: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 40,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Tajawal'),
+                      textStyle: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(fontSize: 40, color: Colors.white),
                       fractionDigits: 0,
                       duration: const Duration(milliseconds: 500),
                       enableSeparator: true,
                     ),
                   ),
-                  const Text('ريال يمني',
-                      style: TextStyle(color: Colors.white70, fontSize: 16)),
+                  Text('ريال يمني',
+                      style: Theme.of(context).textTheme.bodyMedium),
                 ],
               ),
             ),

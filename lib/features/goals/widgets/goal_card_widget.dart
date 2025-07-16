@@ -16,7 +16,7 @@ class GoalCardWidget extends StatelessWidget {
     final format = NumberFormat("#,##0", "en_US");
 
     return Card(
-      color: const Color(0xff161b22),
+      color: Theme.of(context).cardColor, // استخدام لون البطاقة من الثيم
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -27,28 +27,20 @@ class GoalCardWidget extends StatelessWidget {
               children: [
                 Icon(goal.icon, color: goal.color, size: 32),
                 const SizedBox(width: 12),
-                Text(goal.name,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
+                Text(goal.name, style: Theme.of(context).textTheme.titleMedium),
               ],
             ),
             const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'تم توفير: ${format.format(goal.savedAmount)}',
-                  style: const TextStyle(color: Colors.white70, fontSize: 14),
-                ),
-                Text(
-                  '${(progress * 100).toStringAsFixed(0)}%',
-                  style: TextStyle(
-                      color: goal.color,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14),
-                ),
+                Text('تم توفير: ${format.format(goal.savedAmount)}',
+                    style: Theme.of(context).textTheme.bodyMedium),
+                Text('${(progress * 100).toStringAsFixed(0)}%',
+                    style: TextStyle(
+                        color: goal.color,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14)),
               ],
             ),
             const SizedBox(height: 8),
@@ -63,9 +55,11 @@ class GoalCardWidget extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'المتبقي: ${format.format(goal.totalAmount - goal.savedAmount)}',
-                style: const TextStyle(color: Colors.white70, fontSize: 12),
-              ),
+                  'المتبقي: ${format.format(goal.totalAmount - goal.savedAmount)}',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(fontSize: 12)),
             ),
           ],
         ),

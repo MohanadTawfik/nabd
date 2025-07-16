@@ -4,9 +4,7 @@ import 'package:nabd/features/add_transaction/widgets/round_up_suggestion_card.d
 import 'package:nabd/features/categories/models/category_model.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:provider/provider.dart';
-import 'package:uuid/uuid.dart'; 
-
-
+import 'package:uuid/uuid.dart';
 
 class AddTransactionPanel extends StatefulWidget {
   // 1. متغير جديد لاستقبال المعاملة المراد تعديلها
@@ -16,7 +14,7 @@ class AddTransactionPanel extends StatefulWidget {
 
   const AddTransactionPanel(
       {super.key, this.transactionToEdit, this.initialType});
-  
+
   @override
   State<AddTransactionPanel> createState() => _AddTransactionPanelState();
 }
@@ -49,7 +47,6 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
     }
   }
 
-
   void _saveTransaction() {
     final amount = double.tryParse(_amount) ?? 0.0;
     if (amount == 0.0 || _selectedCategory == null) return;
@@ -70,7 +67,6 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
     }
     Navigator.pop(context);
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -110,15 +106,16 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
   // 5. قمنا بتغليف واجهة الإدخال في ويدجت خاص بها
   Widget _buildTransactionForm(Color typeColor) {
     return Column(
-      key: const ValueKey('form'),
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-            width: 40,
-            height: 5,
-            decoration: BoxDecoration(
-                color: Theme.of(context).dividerColor,
-                borderRadius: BorderRadius.circular(12))),
+          width: 40,
+          height: 5,
+          decoration: BoxDecoration(
+            color: Theme.of(context).dividerColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
         const SizedBox(height: 24),
         _buildTypeSelector(context),
         const SizedBox(height: 24),
@@ -132,15 +129,13 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
           width: double.infinity,
           child: ElevatedButton(
             onPressed: _saveTransaction,
-            style: ElevatedButton.styleFrom(
-                backgroundColor: typeColor, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(backgroundColor: typeColor),
             child: const Text('حفظ'),
           ),
         ),
       ],
     );
   }
-
 
   Widget _buildTypeSelector(BuildContext context) {
     return Container(
@@ -234,7 +229,7 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
       }).toList(),
     );
   }
-  
+
   void _onNumpadTapped(String value) {
     setState(() {
       if (value == '⌫') {
