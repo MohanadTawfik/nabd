@@ -136,6 +136,28 @@ class GoalDetailsScreen extends StatelessWidget {
                                 ),
                               ),
                             ),
+                            const SizedBox(height: 16),
+                            // 1. زر جديد للاحتفال بتحقيق الهدف
+                            SizedBox(
+                              width: double.infinity,
+                              child: OutlinedButton.icon(
+                                icon: const Icon(Icons.check_circle_outline),
+                                label: const Text('لقد حققت الهدف!'),
+                                onPressed: () {
+                                  // 2. استدعاء الدالة الجديدة وتسجيل الإنجاز
+                                  appData.achieveGoal(currentGoal);
+                                  Navigator.of(context)
+                                      .pop(); // العودة لشاشة الأهداف
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.green.shade300,
+                                  side:
+                                      BorderSide(color: Colors.green.shade300),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                              ),
+                            ),
                             const SizedBox(
                                 height: 24), // مسافة إضافية في الأسفل
                           ],

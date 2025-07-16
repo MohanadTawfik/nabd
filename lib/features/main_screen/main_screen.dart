@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:nabd/features/dashboard/screens/dashboard_screen.dart';
 import 'package:nabd/features/goals/screens/goals_screen.dart';
-import 'package:nabd/features/reports/screens/reports_screen.dart';
+import 'package:nabd/features/insights_hub/screens/insights_hub_screen.dart';
 import 'package:nabd/features/settings/screens/settings_screen.dart';
 import 'package:nabd/widgets/magic_fab.dart';
 
@@ -20,7 +20,9 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   static const List<Widget> _widgetOptions = <Widget>[
     DashboardScreen(),
-    ReportsScreen(),
+    // JourneyScreen(),
+    // ReportsScreen(),
+    InsightsHubScreen(), 
     GoalsScreen(),
     SettingsScreen(),
   ];

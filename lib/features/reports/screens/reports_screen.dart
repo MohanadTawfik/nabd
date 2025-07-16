@@ -10,11 +10,9 @@ class ReportsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('التقارير'),
-      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
+      
         child: Column(
           children: [
             SizedBox(
@@ -47,9 +45,12 @@ class ReportsScreen extends StatelessWidget {
             const CashFlowRiverCard(),
             const SizedBox(height: 24),
             const ExpensesByCategoryCard(),
+            const SizedBox(height: 100),
+
           ],
         ),
       ),
     );
   }
+
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nabd/features/budgets/models/budget_model.dart';
 import 'package:nabd/features/categories/models/category_model.dart';
 import 'package:nabd/features/goals/models/goal_model.dart';
+import 'package:nabd/features/journey/models/timeline_item_model.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
 
 class AppData extends ChangeNotifier {
@@ -63,6 +64,26 @@ class AppData extends ChangeNotifier {
     Budget(categoryName: 'تسوق', icon: Icons.shopping_bag, totalAmount: 40000),
   ];
 
+
+  // 1. قائمة جديدة للأحداث (مثل تحقيق هدف)
+  final List<TimelineItem> _events = [];
+
+  // 2. getter جديد يدمج المعاملات والأحداث ويرتبها بالتاريخ
+  List<TimelineItem> get timelineItems {
+    final List<TimelineItem> allItems = [];
+
+    // إضافة المعاملات
+    for (var t in _transactions) {
+      allItems.add(TimelineItem(date: t.date, event: t));
+    }
+    // إضافة الأحداث
+    allItems.addAll(_events);
+
+    // ترتيب الكل من الأحدث للأقدم
+    allItems.sort((a, b) => b.date.compareTo(a.date));
+    return allItems;
+  }
+
  
 
   // 1. هذا هو الإصلاح: إضافة getter عام للمتغير الخاص
@@ -87,6 +108,16 @@ class AppData extends ChangeNotifier {
       .fold(0.0, (sum, item) => sum + item.amount);
   double get currentBalance => totalIncome - totalExpense;
  
+
+  // 3. دالة جديدة لتسجيل تحقيق الهدف كحدث
+  void achieveGoal(Goal goal) {
+    // إضافة حدث جديد
+    _events.add(TimelineItem(date: DateTime.now(), event: goal));
+    // حذف الهدف من القائمة النشطة
+    _goals.remove(goal);
+    notifyListeners();
+  }
+
 
   // 1. إعادة كتابة دالة "نصيحة اليوم" بالكامل لتكون ذكية
   String get dailyInsight {

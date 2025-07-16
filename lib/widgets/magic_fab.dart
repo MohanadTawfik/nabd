@@ -180,6 +180,8 @@ class _MagicFabState extends State<MagicFab>
           icon: AnimatedIcons.menu_close,
           progress: _controller,
           color: Colors.white,
+          size: 30,
+
         ),
       ),
     );
@@ -196,10 +198,13 @@ class _MagicFabState extends State<MagicFab>
         children: [
           FloatingActionButton(
             onPressed: onPressed,
-            backgroundColor: color,
+            backgroundColor: color,  
             mini: true,
             heroTag: label,
-            child: Icon(icon, color: Colors.white),
+            child: Icon(
+              icon,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 8),
           Material(
@@ -242,7 +247,7 @@ class _MagicFabState extends State<MagicFab>
       key: _fabKey,
       onPressed: _toggleMenu,
       backgroundColor: Theme.of(context).primaryColor,
-      child: const Icon(Icons.add, color: Colors.white),
+      child: const Icon(Icons.add, color: Colors.white, size: 30),
     );
   }
 
