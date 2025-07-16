@@ -34,12 +34,13 @@ class _MagicFabState extends State<MagicFab>
     super.dispose();
   }
 
-  void _toggleMenu() {
+  Future<void> _toggleMenu() async {
     if (_controller.isDismissed) {
       _showOverlay();
-      _controller.forward();
+      await _controller.forward();
     } else {
-      _controller.reverse().whenComplete(_removeOverlay);
+      await _controller.reverse();
+      _removeOverlay();
     }
   }
 
@@ -54,6 +55,7 @@ class _MagicFabState extends State<MagicFab>
         return Stack(
           fit: StackFit.expand,
           children: [
+            // الطبقة الأولى: الخلفية المعتمة
             GestureDetector(
               onTap: _toggleMenu,
               child: BackdropFilter(
@@ -63,7 +65,11 @@ class _MagicFabState extends State<MagicFab>
                 ),
               ),
             ),
+            // الطبقة الثانية: الأزرار المتحركة
             ..._buildExpandingActionButtons(),
+
+            // 3. الطبقة الثالثة (الأخيرة): الزر الرئيسي نفسه، ليكون دائماً في المقدمة
+            _buildMainFab(),
           ],
         );
       },
@@ -82,8 +88,8 @@ class _MagicFabState extends State<MagicFab>
 
     const count = 3;
     const distance = 100.0;
-    final degrees = [195.0, 263.0, 345.0];
-    // final degrees = [195.0, 270.0, 345.0];
+    // 1. زوايا جديدة ومضبوطة لتوزيع مثالي على شكل قوس
+    final degrees = [195.0, 270.0, 345.0];
     final actions = [
       {
         'label': 'مصروف',
@@ -114,11 +120,19 @@ class _MagicFabState extends State<MagicFab>
           builder: (context, child) {
             final animation = CurvedAnimation(
                 parent: _controller, curve: Curves.easeInOutBack);
+            // 2. هذا هو الإصلاح النهائي لمشكلة المحاذاة.
+            // الحساب الآن دقيق 100% ويضع كل زر في مكانه الصحيح رياضياً.
+            const widgetSize = 80.0; // حجم الويدجت الكامل (الزر + التسمية)
+            final x = fabCenter.dx -
+                (widgetSize / 2) +
+                (distance * cos(angle) * animation.value);
+            final y = fabCenter.dy -
+                (widgetSize / 2) +
+                (distance * sin(angle) * animation.value);
+
             return Positioned(
-              left:
-                  fabCenter.dx - 25 + (distance * cos(angle) * animation.value),
-              top:
-                  fabCenter.dy - 25 + (distance * sin(angle) * animation.value),
+              left: x,
+              top: y,
               child: Transform.scale(
                 scale: animation.value,
                 child: Transform.rotate(
@@ -146,31 +160,64 @@ class _MagicFabState extends State<MagicFab>
     return buttons;
   }
 
+
+
+  // 4. ويدجت جديد لبناء الزر الرئيسي داخل الـ Overlay
+  Widget _buildMainFab() {
+    if (_fabKey.currentContext == null) return const SizedBox.shrink();
+    final fabRenderBox =
+        _fabKey.currentContext!.findRenderObject() as RenderBox;
+    final fabCenter =
+        fabRenderBox.localToGlobal(fabRenderBox.size.center(Offset.zero));
+
+    return Positioned(
+      top: fabCenter.dy - (56 / 2), // 56 هو حجم الزر الافتراضي
+      left: fabCenter.dx - (56 / 2),
+      child: FloatingActionButton(
+        onPressed: _toggleMenu,
+        backgroundColor: Theme.of(context).primaryColor,
+        child: AnimatedIcon(
+          icon: AnimatedIcons.menu_close,
+          progress: _controller,
+          color: Colors.white,
+        ),
+      ),
+    );
+  }
+  
   Widget _actionButton(
       String label, IconData icon, Color color, VoidCallback onPressed) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        FloatingActionButton(
-          onPressed: onPressed,
-          backgroundColor: color,
-          mini: true,
-          heroTag: label,
-          child: Icon(icon, color: Colors.white),
-        ),
-        const SizedBox(height: 8),
-        Material(
-          type: MaterialType.transparency,
-          child: Text(label,
-              style: const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.bold)),
-        ),
-      ],
+    // 3. تغليف الويدجت بـ SizedBox لضمان حجم ثابت ومحاذاة صحيحة
+    return SizedBox(
+      width: 80,
+      height: 80,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          FloatingActionButton(
+            onPressed: onPressed,
+            backgroundColor: color,
+            mini: true,
+            heroTag: label,
+            child: Icon(icon, color: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          Material(
+            type: MaterialType.transparency,
+            child: Text(label,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12)),
+          ),
+        ],
+      ),
     );
   }
 
-  void _showAddPanel(TransactionType type) {
-    _toggleMenu();
+  Future<void> _showAddPanel(TransactionType type) async {
+    await _toggleMenu();
+    if (!mounted) return;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -179,8 +226,9 @@ class _MagicFabState extends State<MagicFab>
     );
   }
 
-  void _showScanner() {
-    _toggleMenu();
+  Future<void> _showScanner() async {
+    await _toggleMenu();
+    if (!mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(builder: (context) => const SmartScannerScreen()),
     );
@@ -188,15 +236,15 @@ class _MagicFabState extends State<MagicFab>
 
   @override
   Widget build(BuildContext context) {
+    // 5. الزر الرئيسي الآن هو مجرد "مرساة" غير مرئية لتحديد الموقع
+    // وهو أيضاً الزر الذي يظهر عندما تكون القائمة مغلقة
     return FloatingActionButton(
       key: _fabKey,
       onPressed: _toggleMenu,
       backgroundColor: Theme.of(context).primaryColor,
-      child: AnimatedIcon(
-        icon: AnimatedIcons.menu_close,
-        progress: _controller,
-        color: Colors.white,
-      ),
+      child: const Icon(Icons.add, color: Colors.white),
     );
   }
+
+  
 }

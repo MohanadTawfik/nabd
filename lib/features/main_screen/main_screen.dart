@@ -87,7 +87,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     return BottomAppBar(
       shape: const CircularNotchedRectangle(),
       notchMargin: 10.0,
-      color: Theme.of(context).cardColor.withOpacity(0.85),
+      color: Theme.of(context).cardColor,
       elevation: 0,
       child: SizedBox(
         height: 60,
