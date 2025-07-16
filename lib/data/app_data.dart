@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nabd/features/budgets/models/budget_model.dart';
+import 'package:nabd/features/categories/models/category_model.dart';
 import 'package:nabd/features/goals/models/goal_model.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
 
@@ -8,31 +9,40 @@ class AppData extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.dark;
   ThemeMode get themeMode => _themeMode;
 
-
-  final List<Transaction> _transactions = [
-    Transaction(
-        id: 't1',
-        category: 'راتب',
-        icon: Icons.wallet,
-        amount: 400000,
-        type: TransactionType.income,
-        date: DateTime.now().subtract(const Duration(days: 5))),
-    Transaction(
-        id: 't2',
-        category: 'طعام',
-        icon: Icons.fastfood,
-        amount: 15000,
-        type: TransactionType.expense,
-        date: DateTime.now().subtract(const Duration(days: 2))),
-    Transaction(
-        id: 't3',
-        category: 'مواصلات',
-        icon: Icons.directions_bus,
-        amount: 5000,
-        type: TransactionType.expense,
-        date: DateTime.now().subtract(const Duration(days: 1))),
-  ];
+  // 1. تحديث البيانات الأولية لتستخدم كائنات الفئات
+  late final List<Transaction> _transactions;
+  // 1. قائمة جديدة لتخزين المعاملات المصفاة
+  List<Transaction> _filteredTransactions = [];
+  bool _isFilterActive = false;
   
+  // 2. قائمة الفئات الآن هي المصدر الحقيقي
+  final List<Category> _categories = [
+    Category(
+        id: 'cat1',
+        name: 'طعام',
+        icon: Icons.fastfood,
+        color: Colors.orange,
+        type: TransactionType.expense),
+    Category(
+        id: 'cat2',
+        name: 'مواصلات',
+        icon: Icons.directions_bus,
+        color: Colors.blue,
+        type: TransactionType.expense),
+    Category(
+        id: 'cat3',
+        name: 'تسوق',
+        icon: Icons.shopping_bag,
+        color: Colors.pink,
+        type: TransactionType.expense),
+    Category(
+        id: 'cat4',
+        name: 'راتب',
+        icon: Icons.wallet,
+        color: Colors.green,
+        type: TransactionType.income),
+  ];
+
   final List<Goal> _goals = [
     Goal(
         name: 'سيارة أحلامي',
@@ -53,7 +63,20 @@ class AppData extends ChangeNotifier {
     Budget(categoryName: 'تسوق', icon: Icons.shopping_bag, totalAmount: 40000),
   ];
 
-  List<Transaction> get transactions => _transactions;
+ 
+
+  // 1. هذا هو الإصلاح: إضافة getter عام للمتغير الخاص
+  bool get isFilterActive => _isFilterActive;
+
+  List<Category> get expenseCategories =>
+      _categories.where((c) => c.type == TransactionType.expense).toList();
+  List<Category> get incomeCategories =>
+      _categories.where((c) => c.type == TransactionType.income).toList();
+
+  List<Transaction> get transactions {
+    // إذا كان الفلتر فعالاً، نعرض القائمة المصفاة، وإلا نعرض القائمة الكاملة
+    return _isFilterActive ? _filteredTransactions : _transactions;
+  }
   List<Goal> get goals => _goals;
   List<Budget> get budgets => _budgets;
   double get totalIncome => _transactions
@@ -65,29 +88,74 @@ class AppData extends ChangeNotifier {
   double get currentBalance => totalIncome - totalExpense;
  
 
-  // 1. دالة ذكية لتوليد نصيحة اليوم
+  // 1. إعادة كتابة دالة "نصيحة اليوم" بالكامل لتكون ذكية
   String get dailyInsight {
-    if (_transactions.where((t) => t.type == TransactionType.expense).isEmpty) {
-      return 'بداية رائعة! ابدأ بتسجيل أول مصروف لك لترى السحر.';
+    // قائمة من الدوال التي تولد النصائح
+    final insightGenerators = <String? Function()>[
+      _generateBudgetInsight,
+      _generateHighSpendingInsight,
+      _generateGoalInsight,
+    ];
+
+    // خلط القائمة للحصول على نصيحة مختلفة في كل مرة
+    insightGenerators.shuffle();
+
+    for (var generator in insightGenerators) {
+      final insight = generator();
+      if (insight != null) {
+        return insight; // إرجاع أول نصيحة صالحة
+      }
     }
 
-    // إيجاد الفئة الأعلى إنفاقاً
+    // نصيحة افتراضية إذا لم يتم توليد أي نصيحة أخرى
+    return 'عمل رائع! استمر في تتبع نفقاتك لتحقيق أهدافك المالية.';
+  }
+
+  // دالة لتوليد نصيحة عن الميزانية
+  String? _generateBudgetInsight() {
+    for (var budget in _budgets) {
+      final progress = budget.spentAmount / budget.totalAmount;
+      if (progress >= 0.8 && progress < 1.0) {
+        return 'انتبه! لقد اقتربت من الوصول إلى حد ميزانية "${budget.categoryName}".';
+      }
+    }
+    return null;
+  }
+
+  // دالة لتوليد نصيحة عن الإنفاق العالي
+  String? _generateHighSpendingInsight() {
+    if (_transactions.where((t) => t.type == TransactionType.expense).length <
+        5) return null;
+
     final expenseMap = <String, double>{};
     for (var t
         in _transactions.where((t) => t.type == TransactionType.expense)) {
-      expenseMap.update(t.category, (value) => value + t.amount,
+      expenseMap.update(t.category.name, (value) => value + t.amount,
           ifAbsent: () => t.amount);
     }
 
-    // ترتيب الفئات من الأعلى للأقل
     final sortedExpenses = expenseMap.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-
     final highestSpendingCategory = sortedExpenses.first;
 
-    // توليد نصيحة بناءً على الفئة الأعلى
-    return 'يبدو أن معظم إنفاقك هذا الشهر يذهب إلى فئة "${highestSpendingCategory.key}". ما رأيك في مراجعة هذه الفئة؟';
+    if (highestSpendingCategory.value > (totalExpense * 0.4)) {
+      // إذا كانت الفئة الأعلى تمثل أكثر من 40% من المصروفات
+      return 'يبدو أن معظم إنفاقك يذهب إلى فئة "${highestSpendingCategory.key}". ما رأيك في مراجعتها؟';
+    }
+    return null;
   }
+
+  // دالة لتوليد نصيحة عن الأهداف
+  String? _generateGoalInsight() {
+    if (_goals.isEmpty) return null;
+    final goal = _goals.first; // كمثال، نأخذ أول هدف
+    final progress = goal.savedAmount / goal.totalAmount;
+    if (progress > 0.5 && progress < 0.9) {
+      return 'أنت في منتصف الطريق نحو تحقيق هدفك "${goal.name}"! عمل رائع، استمر بذلك! 🎉';
+    }
+    return null;
+  }
+
 
   // 2. دالة لتغيير المظهر وإخبار المستمعين
   void changeTheme(ThemeMode themeMode) {
@@ -95,6 +163,59 @@ class AppData extends ChangeNotifier {
     notifyListeners();
   }
 
+  // 2. دالة جديدة لتطبيق الفلتر
+  void filterTransactions(
+      {DateTime? startDate, DateTime? endDate, List<Category>? categories}) {
+    // نبدأ بالقائمة الكاملة
+    List<Transaction> results = _transactions;
+
+    // تصفية حسب التاريخ
+    if (startDate != null && endDate != null) {
+      // تعديل بسيط هنا ليكون التاريخ شاملاً
+      final inclusiveEndDate = endDate.add(const Duration(days: 1));
+      results = results
+          .where((t) =>
+              !t.date.isBefore(startDate) && t.date.isBefore(inclusiveEndDate))
+          .toList();
+    }
+
+    // تصفية حسب الفئات
+    if (categories != null && categories.isNotEmpty) {
+      final categoryIds = categories.map((c) => c.id).toSet();
+      results =
+          results.where((t) => categoryIds.contains(t.category.id)).toList();
+    }
+
+    _filteredTransactions = results;
+    _isFilterActive = true;
+    notifyListeners();
+  }
+
+  // 3. دالة لإلغاء الفلتر
+  void clearFilter() {
+    _isFilterActive = false;
+    notifyListeners();
+  }
+
+  // 3. دوال جديدة لإدارة الفئات
+  void addCategory(Category category) {
+    _categories.add(category);
+    notifyListeners();
+  }
+
+  void updateCategory(Category updatedCategory) {
+    final index = _categories.indexWhere((c) => c.id == updatedCategory.id);
+    if (index != -1) {
+      _categories[index] = updatedCategory;
+      notifyListeners();
+    }
+  }
+
+  void deleteCategory(Category category) {
+    _categories.remove(category);
+    // يمكنك إضافة منطق لحذف المعاملات المرتبطة بهذه الفئة هنا
+    notifyListeners();
+  }
 
   void addTransaction(Transaction transaction) {
     _transactions.add(transaction);
@@ -145,18 +266,92 @@ class AppData extends ChangeNotifier {
     notifyListeners();
   }
 
+
+  // 1. دالة ذكية لحساب مؤشر الصحة المالية (من 0.0 إلى 1.0)
+  double get financialHealthScore {
+    double score = 0;
+
+    // معيار 1: نسبة التوفير (تصل إلى 50 نقطة)
+    if (totalIncome > 0) {
+      double savingsRatio = (totalIncome - totalExpense) / totalIncome;
+      score += (savingsRatio.clamp(0.0, 1.0) * 50);
+    }
+
+    // معيار 2: الالتزام بالميزانية (تصل إلى 30 نقطة)
+    if (_budgets.isNotEmpty) {
+      double totalBudgetCompliance = 0;
+      for (var budget in _budgets) {
+        if (budget.spentAmount <= budget.totalAmount) {
+          totalBudgetCompliance += 1;
+        }
+      }
+      score += (totalBudgetCompliance / _budgets.length) * 30;
+    }
+
+    // معيار 3: التقدم في الأهداف (تصل إلى 20 نقطة)
+    if (_goals.isNotEmpty) {
+      double totalGoalProgress = 0;
+      for (var goal in _goals) {
+        totalGoalProgress +=
+            (goal.savedAmount / goal.totalAmount).clamp(0.0, 1.0);
+      }
+      score += (totalGoalProgress / _goals.length) * 20;
+    }
+
+    // إرجاع النتيجة كنسبة مئوية (0.0 إلى 1.0)
+    return (score / 100).clamp(0.0, 1.0);
+  }
+
+  // دالة لتحديد اسم المستوى بناءً على النتيجة
+  String get financialLevelName {
+    final score = financialHealthScore;
+    if (score < 0.3) return 'البذرة';
+    if (score < 0.7) return 'النبتة المتنامية';
+    return 'الشجرة المزدهرة';
+  }
+
+
+
+
+
+
+
+  // 2. تحديث دالة تحديث الميزانيات
   void _updateBudgets() {
     for (var budget in _budgets) {
       final spent = _transactions
           .where((t) =>
               t.type == TransactionType.expense &&
-              t.category == budget.categoryName)
+              t.category.name == budget.categoryName)
           .fold(0.0, (sum, item) => sum + item.amount);
       budget.spentAmount = spent;
     }
   }
 
+
+
+
   AppData() {
+    _transactions = [
+      Transaction(
+          id: 't1',
+          category: _categories[3],
+          amount: 400000,
+          type: TransactionType.income,
+          date: DateTime.now().subtract(const Duration(days: 5))),
+      Transaction(
+          id: 't2',
+          category: _categories[0],
+          amount: 15000,
+          type: TransactionType.expense,
+          date: DateTime.now().subtract(const Duration(days: 2))),
+      Transaction(
+          id: 't3',
+          category: _categories[1],
+          amount: 5000,
+          type: TransactionType.expense,
+          date: DateTime.now().subtract(const Duration(days: 1))),
+    ];
     _updateBudgets();
   }
 }

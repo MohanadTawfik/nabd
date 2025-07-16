@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nabd/data/app_data.dart';
+import 'package:nabd/features/add_transaction/widgets/round_up_suggestion_card.dart';
+import 'package:nabd/features/categories/models/category_model.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart'; 
@@ -9,64 +11,52 @@ import 'package:uuid/uuid.dart';
 class AddTransactionPanel extends StatefulWidget {
   // 1. متغير جديد لاستقبال المعاملة المراد تعديلها
   final Transaction? transactionToEdit;
-  const AddTransactionPanel({super.key, this.transactionToEdit});
+  // 1. متغير جديد لاستقبال النوع المبدئي
+  final TransactionType? initialType;
 
+  const AddTransactionPanel(
+      {super.key, this.transactionToEdit, this.initialType});
+  
   @override
   State<AddTransactionPanel> createState() => _AddTransactionPanelState();
 }
 
 class _AddTransactionPanelState extends State<AddTransactionPanel> {
   String _amount = '0';
-  String? _selectedCategoryName;
-  TransactionType _selectedType = TransactionType.expense;
+  Category? _selectedCategory; // 1. الآن نحفظ الفئة الكاملة
+  // TransactionType _selectedType = TransactionType.expense;
   // 2. متغير لتحديد إذا كنا في وضع التعديل
   late bool _isEditing;
-
-  final List<Map<String, dynamic>> _expenseCategories = [
-    {'name': 'طعام', 'icon': Icons.fastfood},
-    {'name': 'مواصلات', 'icon': Icons.directions_bus},
-    {'name': 'مقاضي', 'icon': Icons.shopping_bag},
-    {'name': 'فواتير', 'icon': Icons.receipt_long},
-  ];
-  final List<Map<String, dynamic>> _incomeCategories = [
-    {'name': 'راتب', 'icon': Icons.wallet},
-    {'name': 'هدية', 'icon': Icons.card_giftcard},
-    {'name': 'أعمال حرة', 'icon': Icons.work},
-  ];
+  // 2. متغير حالة جديد للتحكم في إظهار بطاقة التقريب
+  bool _showRoundUpSuggestion = false;
+  late Transaction _savedTransaction;
+  late TransactionType _selectedType;
 
   @override
   void initState() {
     super.initState();
-    // 3. تهيئة الحالة بناءً على وجود معاملة للتعديل
     _isEditing = widget.transactionToEdit != null;
     if (_isEditing) {
       final t = widget.transactionToEdit!;
       _amount = t.amount.toStringAsFixed(0);
-      _selectedCategoryName = t.category;
       _selectedType = t.type;
+      // 1. الآن يمكننا تحديد الفئة بشكل صحيح
+      _selectedCategory = t.category;
     } else {
       _amount = '0';
-      _selectedType = TransactionType.expense;
-      _selectedCategoryName = null;
+      // 2. تحديد النوع المبدئي من البوابة السحرية
+      _selectedType = widget.initialType ?? TransactionType.expense;
     }
   }
 
 
   void _saveTransaction() {
     final amount = double.tryParse(_amount) ?? 0.0;
-    if (amount == 0.0 || _selectedCategoryName == null) return;
+    if (amount == 0.0 || _selectedCategory == null) return;
 
-    final categories = _selectedType == TransactionType.expense
-        ? _expenseCategories
-        : _incomeCategories;
-    final selectedCategoryData =
-        categories.firstWhere((c) => c['name'] == _selectedCategoryName);
-
-    // 4. إنشاء المعاملة الجديدة أو تحديث القديمة
     final transaction = Transaction(
       id: _isEditing ? widget.transactionToEdit!.id : const Uuid().v4(),
-      category: _selectedCategoryName!,
-      icon: selectedCategoryData['icon'],
+      category: _selectedCategory!, // 2. نمرر كائن الفئة بالكامل
       amount: amount,
       type: _selectedType,
       date: _isEditing ? widget.transactionToEdit!.date : DateTime.now(),
@@ -78,21 +68,15 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
     } else {
       appData.addTransaction(transaction);
     }
-
     Navigator.pop(context);
   }
-  
 
-  // 1. دالة ذكية لتحديد اللون الرئيسي بناءً على النوع
-  Color _getTypeColor(BuildContext context) {
-    return _selectedType == TransactionType.expense
-        ? Colors.red.shade400
-        : Colors.green.shade400;
-  }
 
   @override
   Widget build(BuildContext context) {
-    final typeColor = _getTypeColor(context);
+    final typeColor = _selectedType == TransactionType.expense
+        ? Colors.red.shade400
+        : Colors.green.shade400;
 
     return Container(
       decoration: BoxDecoration(
@@ -101,44 +85,62 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
       ),
       padding: EdgeInsets.fromLTRB(
           20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40,
-            height: 5,
-            decoration: BoxDecoration(
-              color: Theme.of(context).dividerColor,
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-          const SizedBox(height: 24),
-          _buildTypeSelector(context),
-          const SizedBox(height: 24),
-          _buildAmountDisplay(context, typeColor),
-          const SizedBox(height: 24),
-          _buildCategoryBubbles(context, typeColor),
-          const SizedBox(height: 24),
-          _buildNumpad(context),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            // 2. زر الحفظ الآن يأخذ لونه من النوع المختار
-            child: ElevatedButton(
-              onPressed: _saveTransaction,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: typeColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('حفظ'),
-            ),
-          ),
-        ],
+      // 4. استخدام AnimatedSwitcher للانتقال السلس بين الواجهتين
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 400),
+        transitionBuilder: (child, animation) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.0, 1.0),
+              end: Offset.zero,
+            ).animate(animation),
+            child: child,
+          );
+        },
+        child: _showRoundUpSuggestion
+            ? RoundUpSuggestionCard(
+                transaction: _savedTransaction,
+                onDismiss: () => Navigator.pop(context),
+              )
+            : _buildTransactionForm(typeColor),
       ),
     );
   }
+
+  // 5. قمنا بتغليف واجهة الإدخال في ويدجت خاص بها
+  Widget _buildTransactionForm(Color typeColor) {
+    return Column(
+      key: const ValueKey('form'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+            width: 40,
+            height: 5,
+            decoration: BoxDecoration(
+                color: Theme.of(context).dividerColor,
+                borderRadius: BorderRadius.circular(12))),
+        const SizedBox(height: 24),
+        _buildTypeSelector(context),
+        const SizedBox(height: 24),
+        _buildAmountDisplay(context, typeColor),
+        const SizedBox(height: 24),
+        _buildCategoryBubbles(context, typeColor),
+        const SizedBox(height: 24),
+        _buildNumpad(context),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _saveTransaction,
+            style: ElevatedButton.styleFrom(
+                backgroundColor: typeColor, foregroundColor: Colors.white),
+            child: const Text('حفظ'),
+          ),
+        ),
+      ],
+    );
+  }
+
 
   Widget _buildTypeSelector(BuildContext context) {
     return Container(
@@ -169,7 +171,7 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
         onTap: () {
           setState(() {
             _selectedType = type;
-            _selectedCategoryName = null;
+            // _selectedCategoryName = null;
           });
         },
         child: AnimatedContainer(
@@ -194,43 +196,45 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
     );
   }
 
+  // 2. تحديث الويدجت ليقرأ الفئات من AppData
   Widget _buildCategoryBubbles(BuildContext context, Color typeColor) {
+    final appData = Provider.of<AppData>(context);
     final categories = _selectedType == TransactionType.expense
-        ? _expenseCategories
-        : _incomeCategories;
-    final chipTheme = Theme.of(context).chipTheme;
+        ? appData.expenseCategories
+        : appData.incomeCategories;
 
     return Wrap(
       spacing: 12.0,
       runSpacing: 12.0,
       alignment: WrapAlignment.center,
       children: categories.map((category) {
-        final isSelected = _selectedCategoryName == category['name'];
+        final isSelected = _selectedCategory?.id == category.id;
         return ChoiceChip(
-          label: Text(category['name']),
+          label: Text(category.name),
+          avatar: Icon(category.icon,
+              color: isSelected ? Colors.white : category.color),
           selected: isSelected,
           onSelected: (selected) {
             setState(() {
-              _selectedCategoryName = selected ? category['name'] : null;
+              _selectedCategory = selected ? category : null;
             });
           },
-          backgroundColor: chipTheme.backgroundColor,
-          // 4. الفئة المختارة تأخذ لون النوع (أحمر أو أخضر)
-          selectedColor: typeColor,
-          labelStyle: isSelected
-              ? const TextStyle(
-                  color: Colors.white, fontWeight: FontWeight.bold)
-              : chipTheme.labelStyle,
-          // shape: isSelected
-          //     ? RoundedRectangleBorder(
-          //         // borderRadius: BorderRadius.circular(12),
-          //         side: BorderSide(color: typeColor, width: 1.5))
-          //     : chipTheme.shape as OutlinedBorder?,
+          selectedColor: category.color,
+          labelStyle: TextStyle(
+              color: isSelected
+                  ? Colors.white
+                  : Theme.of(context).textTheme.bodyMedium?.color,
+              fontWeight: FontWeight.bold),
+          shape: isSelected
+              ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
+              : RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: Theme.of(context).dividerColor)),
         );
       }).toList(),
     );
   }
-
+  
   void _onNumpadTapped(String value) {
     setState(() {
       if (value == '⌫') {

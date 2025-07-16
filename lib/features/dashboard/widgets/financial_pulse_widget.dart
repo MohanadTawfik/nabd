@@ -55,6 +55,8 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
   Widget build(BuildContext context) {
     return Consumer<AppData>(
       builder: (context, appData, child) {
+
+        final score = appData.financialHealthScore;
         final format = NumberFormat("#,##0", "en_US");
         final balance = appData.currentBalance;
 
@@ -67,6 +69,7 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
         return AnimatedBuilder(
           animation: _controller,
           builder: (context, animChild) {
+
             return Center(
               child: Transform.scale(
                 scale: _scaleAnimation.value,
@@ -100,6 +103,14 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  // 1. أيقونة تتطور مع المستوى
+                  if (score > 0.7)
+                    Icon(Icons.star,
+                        color: Colors.amber.withOpacity(0.5), size: 24)
+                  else if (score > 0.3)
+                    Icon(Icons.local_florist,
+                        color: Colors.green.withOpacity(0.5), size: 24),
+
                   const Text('رصيدك الحالي',
                       style: TextStyle(color: Colors.white70, fontSize: 18)),
                   const SizedBox(height: 8),

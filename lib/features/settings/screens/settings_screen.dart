@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nabd/data/app_data.dart';
+import 'package:nabd/features/categories/screens/manage_categories_screen.dart';
 import 'package:provider/provider.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/settings_section.dart';
@@ -54,7 +55,13 @@ class SettingsScreen extends StatelessWidget {
                 SettingsItem(
                   icon: Icons.category_outlined,
                   title: 'إدارة الفئات',
-                  onTap: () {},
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => const ManageCategoriesScreen()),
+                    );
+                  },
                 ),
                 SettingsItem(
                   icon: Icons.currency_exchange,

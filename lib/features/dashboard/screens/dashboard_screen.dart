@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nabd/features/dashboard/widgets/budgets_card.dart';
 import 'package:nabd/features/dashboard/widgets/expenses_section.dart';
+import 'package:nabd/features/dashboard/widgets/level_indicator_widget.dart';
 import '../widgets/financial_pulse_widget.dart';
 import '../widgets/insight_card.dart';
 import '../widgets/goals_section.dart';
@@ -26,6 +27,9 @@ class DashboardScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: const [
+            // 2. إضافة مؤشر المستوى الجديد
+            LevelIndicatorWidget(),
+            SizedBox(height: 16),
             FinancialPulseWidget(),
             SizedBox(height: 24),
             InsightCard(),

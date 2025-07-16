@@ -25,7 +25,7 @@ class SettingsItem extends StatelessWidget {
                   .textTheme
                   .bodyMedium
                   ?.color
-                  ?.withOpacity(0.9),
+                ?..withValues(alpha: 0.9),
               fontSize: 16)),
       // 1. إذا كان الـ trailing هو Switch، لا نعرض السهم
       trailing: (trailing is Switch)

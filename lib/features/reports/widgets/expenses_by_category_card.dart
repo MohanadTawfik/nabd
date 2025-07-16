@@ -14,7 +14,7 @@ class ExpensesByCategoryCard extends StatefulWidget {
 class _ExpensesByCategoryCardState extends State<ExpensesByCategoryCard> {
   int? _selectedIndex;
 
-  // 1. تعريف خريطة الألوان هنا
+  // // 1. تعريف خريطة الألوان هنا
   final Map<String, Color> _categoryColors = {
     'طعام': Colors.blue,
     'مواصلات': Colors.orange,
@@ -34,7 +34,8 @@ class _ExpensesByCategoryCardState extends State<ExpensesByCategoryCard> {
         final expenseMap = <String, double>{};
         for (var t in appData.transactions
             .where((t) => t.type == TransactionType.expense)) {
-          expenseMap.update(t.category, (value) => value + t.amount,
+          expenseMap.update(t.category.name, 
+          (value) => value + t.amount,
               ifAbsent: () => t.amount);
         }
         final expensesData = expenseMap.entries.toList()

@@ -11,24 +11,35 @@ const ExpensesSection({super.key});
 
   @override
   Widget build(BuildContext context) {
-    const categoryColors = {
-      'طعام': Colors.blue,
-      'مواصلات': Colors.orange,
-      'مقاضي': Colors.red,
-      'فواتير': Colors.purple,
-      'ترفيه': Colors.teal,
-      'تسوق': Colors.pink,
-    };
-    const defaultColor = Colors.grey;
+    // const categoryColors = {
+    //   'طعام': Colors.blue,
+    //   'مواصلات': Colors.orange,
+    //   'مقاضي': Colors.red,
+    //   'فواتير': Colors.purple,
+    //   'ترفيه': Colors.teal,
+    //   'تسوق': Colors.pink,
+    // };
+    // const defaultColor = Colors.grey;
 
     return Consumer<AppData>(
       builder: (context, appData, child) {
+        // 1. منطق تجميع المصروفات الآن أبسط وأكثر ذكاءً
         final expenseMap = <String, Map<String, dynamic>>{};
         for (var t in appData.transactions
             .where((t) => t.type == TransactionType.expense)) {
-          expenseMap.update(t.category,
-              (value) => {'amount': value['amount'] + t.amount, 'icon': t.icon},
-              ifAbsent: () => {'amount': t.amount, 'icon': t.icon});
+          expenseMap.update(
+            t.category.name, // استخدام اسم الفئة من الكائن
+            (value) => {
+              'amount': value['amount'] + t.amount,
+              'icon': t.category.icon,
+              'color': t.category.color
+            },
+            ifAbsent: () => {
+              'amount': t.amount,
+              'icon': t.category.icon,
+              'color': t.category.color
+            },
+          );
         }
         final expensesData = expenseMap.entries.toList()
           ..sort((a, b) => b.value['amount'].compareTo(a.value['amount']));
@@ -92,13 +103,13 @@ const ExpensesSection({super.key});
                       final percentage = totalExpenses > 0
                           ? expense.value['amount'] / totalExpenses
                           : 0.0;
-                      final color = categoryColors[expense.key] ?? defaultColor;
+                      // 2. تمرير البيانات المحدثة
                       return _buildExpenseRow(
                         name: expense.key,
                         icon: expense.value['icon'],
                         amount: expense.value['amount'],
                         percentage: percentage,
-                        color: color,
+                        color: expense.value['color'], // اللون الآن حقيقي
                       );
                     },
                   ),
