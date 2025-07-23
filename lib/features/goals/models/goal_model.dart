@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 class Goal {
   final String name;
   final IconData icon;
-  final double totalAmount;
   final Color color;
   double savedAmount;
+  final double totalAmount;
 
   Goal({
     required this.name,
