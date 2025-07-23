@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:nabd/theme/app_colors.dart';
 import 'package:nabd/features/dashboard/screens/dashboard_screen.dart';
 import 'package:nabd/features/goals/screens/goals_screen.dart';
 import 'package:nabd/features/insights_hub/screens/insights_hub_screen.dart';
@@ -20,8 +21,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   static const List<Widget> _widgetOptions = <Widget>[
     DashboardScreen(),
-    // JourneyScreen(),
-    // ReportsScreen(),
     InsightsHubScreen(), 
     GoalsScreen(),
     SettingsScreen(),
@@ -34,17 +33,17 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         AnimationController(vsync: this, duration: const Duration(seconds: 10))
           ..repeat(reverse: true);
     _colorAnimation1 = ColorTween(
-            begin: const Color(0xff0d1117),
-            end: const Color(0xff1fddff).withOpacity(0.1))
+            begin: AppColors.backgroundDark,
+            end: AppColors.accentColor.withOpacity(0.1))
         .animate(_backgroundAnimationController);
     _colorAnimation2 = ColorTween(
-            begin: const Color(0xff8952ff).withOpacity(0.15),
-            end: const Color(0xff0d1117))
+            begin: AppColors.primaryLight.withOpacity(0.15),
+            end: AppColors.backgroundDark)
         .animate(_backgroundAnimationController);
   }
 
-  @override
-  void dispose() {
+@override
+  dispose() {
     _backgroundAnimationController.dispose();
     super.dispose();
   }
@@ -89,7 +88,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     return BottomAppBar(
       shape: const CircularNotchedRectangle(),
       notchMargin: 10.0,
-      color: Theme.of(context).cardColor,
+      color: Theme.of(context).bottomAppBarTheme.color,
       elevation: 0,
       child: SizedBox(
         height: 60,
@@ -112,7 +111,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       icon: Icon(
         icon,
         color: _selectedIndex == index
-            ? Theme.of(context).primaryColor
+            ? Theme.of(context).colorScheme.primary
             : Theme.of(context).iconTheme.color,
       ),
       onPressed: () => _onItemTapped(index),

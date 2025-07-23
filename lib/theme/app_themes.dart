@@ -1,86 +1,82 @@
 import 'package:flutter/material.dart';
+import 'package:nabd/theme/app_colors.dart';
+import 'package:nabd/theme/app_text_styles.dart';
 
 class AppThemes {
-  // --- الألوان الأساسية ---
-  static final Color _darkPrimaryColor = const Color(0xff9b59b6); // بنفسجي أنيق
-  static final Color _darkScaffoldBg = const Color(0xff121212); // أسود حقيقي
-  static final Color _darkCardColor =
-      const Color(0xff1e1e1e); // رمادي داكن للبطاقات
-  static final Color _darkTextColor = Colors.white.withOpacity(0.9);
-  static final Color _darkSubtextColor = Colors.white60;
-
-  static final Color _lightPrimaryColor =
-      const Color(0xff673ab7); // بنفسجي مشرق
-  static final Color _lightScaffoldBg = const Color(0xfff5f5f5);
-  static final Color _lightCardColor = Colors.white;
-  static final Color _lightTextColor = Colors.black87;
-  static final Color _lightSubtextColor = Colors.grey.shade700;
-
-  // --- ألوان المعاملات ---
-  static final Color incomeColor = Colors.green.shade400;
-  static final Color expenseColor = Colors.red.shade400;
-
-  // ================== الثيم الليلي (التحفة الفنية) ==================
+  // ================== Dark Theme ==================
   static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
     fontFamily: 'Tajawal',
-    primaryColor: _darkPrimaryColor,
-    scaffoldBackgroundColor: _darkScaffoldBg,
-    cardColor: _darkCardColor,
-    dividerColor: Colors.white24,
+    primaryColor: AppColors.primaryDark,
+    scaffoldBackgroundColor: AppColors.backgroundDark,
+    cardColor: AppColors.cardDark,
+    dividerColor: AppColors.dividerDark,
+    splashFactory: InkRipple.splashFactory,
+    visualDensity: VisualDensity.adaptivePlatformDensity,
     appBarTheme: AppBarTheme(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      centerTitle: false, // العنوان على اليمين
-      titleTextStyle: TextStyle(
-          fontFamily: 'Tajawal',
-          fontWeight: FontWeight.bold,
-          fontSize: 24,
-          color: _darkTextColor),
-      iconTheme: IconThemeData(color: _darkTextColor),
+      centerTitle: false,
+      titleTextStyle: AppTextStyles.headline2
+          .copyWith(color: AppColors.textDark, fontWeight: FontWeight.bold),
+      iconTheme: const IconThemeData(color: AppColors.textDark),
     ),
-    iconTheme: IconThemeData(color: _darkSubtextColor),
+    iconTheme: const IconThemeData(color: AppColors.subtextDark),
     textTheme: TextTheme(
+      displayLarge: AppTextStyles.headline1.copyWith(color: AppColors.textDark),
+      displayMedium:
+          AppTextStyles.headline2.copyWith(color: AppColors.textDark),
+      displaySmall: AppTextStyles.headline3.copyWith(color: AppColors.textDark),
+      headlineMedium:
+          AppTextStyles.subtitle1.copyWith(color: AppColors.textDark),
+      headlineSmall:
+          AppTextStyles.subtitle2.copyWith(color: AppColors.textDark),
+      bodyLarge: AppTextStyles.bodyText1.copyWith(color: AppColors.subtextDark),
       bodyMedium:
-          TextStyle(color: _darkSubtextColor, fontSize: 14, height: 1.5),
-      titleLarge: TextStyle(
-          color: _darkTextColor, fontWeight: FontWeight.bold, fontSize: 32),
-      titleMedium: TextStyle(
-          color: _darkTextColor, fontWeight: FontWeight.bold, fontSize: 18),
-      titleSmall: TextStyle(
-          color: _darkTextColor, fontWeight: FontWeight.normal, fontSize: 16),
+          AppTextStyles.bodyText2.copyWith(color: AppColors.subtextDark),
+      labelLarge:
+          AppTextStyles.buttonText.copyWith(color: AppColors.primaryDark),
+      bodySmall: AppTextStyles.caption.copyWith(color: AppColors.subtextDark),
     ),
   );
 
-  // ================== الثيم النهاري (الوجه المشرق) ==================
+  // ================== Light Theme ==================
   static final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
     fontFamily: 'Tajawal',
-    primaryColor: _lightPrimaryColor,
-    scaffoldBackgroundColor: _lightScaffoldBg,
-    cardColor: _lightCardColor,
-    dividerColor: Colors.grey.shade300,
+    primaryColor: AppColors.primaryLight,
+    scaffoldBackgroundColor: AppColors.backgroundLight,
+    cardColor: AppColors.cardLight,
+    dividerColor: AppColors.dividerLight,
+    splashFactory: InkRipple.splashFactory,
+    visualDensity: VisualDensity.adaptivePlatformDensity,
     appBarTheme: AppBarTheme(
-      backgroundColor: _lightScaffoldBg,
+      backgroundColor: AppColors.backgroundLight,
       elevation: 0,
       centerTitle: false,
-      titleTextStyle: TextStyle(
-          fontFamily: 'Tajawal',
-          fontWeight: FontWeight.bold,
-          fontSize: 24,
-          color: _lightTextColor),
-      iconTheme: IconThemeData(color: _lightTextColor),
+      titleTextStyle: AppTextStyles.headline2
+          .copyWith(color: AppColors.textLight, fontWeight: FontWeight.bold),
+      iconTheme: const IconThemeData(color: AppColors.textLight),
     ),
-    iconTheme: IconThemeData(color: _lightSubtextColor),
+    iconTheme: const IconThemeData(color: AppColors.iconLight),
     textTheme: TextTheme(
+      displayLarge:
+          AppTextStyles.headline1.copyWith(color: AppColors.textLight),
+      displayMedium:
+          AppTextStyles.headline2.copyWith(color: AppColors.textLight),
+      displaySmall:
+          AppTextStyles.headline3.copyWith(color: AppColors.textLight),
+      headlineMedium:
+          AppTextStyles.subtitle1.copyWith(color: AppColors.textLight),
+      headlineSmall:
+          AppTextStyles.subtitle2.copyWith(color: AppColors.textLight),
+      bodyLarge:
+          AppTextStyles.bodyText1.copyWith(color: AppColors.textSecondary),
       bodyMedium:
-          TextStyle(color: _lightSubtextColor, fontSize: 14, height: 1.5),
-      titleLarge: TextStyle(
-          color: _lightTextColor, fontWeight: FontWeight.bold, fontSize: 32),
-      titleMedium: TextStyle(
-          color: _lightTextColor, fontWeight: FontWeight.bold, fontSize: 18),
-      titleSmall: TextStyle(
-          color: _lightTextColor, fontWeight: FontWeight.normal, fontSize: 16),
+          AppTextStyles.bodyText2.copyWith(color: AppColors.textSecondary),
+      labelLarge:
+          AppTextStyles.buttonText.copyWith(color: AppColors.primaryLight),
+      bodySmall: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
     ),
   );
 }

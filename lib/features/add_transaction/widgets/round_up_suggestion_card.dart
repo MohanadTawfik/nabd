@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
+import 'package:nabd/theme/app_colors.dart';
+import 'package:nabd/theme/app_paddings.dart';
+import 'package:nabd/theme/app_text_styles.dart';
 import 'package:provider/provider.dart';
 
 // 1. حولنا الويدجت إلى StatefulWidget لإدارة المراحل (اقتراح -> اختيار هدف)
@@ -62,20 +65,20 @@ class _RoundUpSuggestionCardState extends State<RoundUpSuggestionCard> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(Icons.savings_outlined,
-            size: 60, color: Theme.of(context).primaryColor),
-        const SizedBox(height: 16),
-        const Text('حصالة نبض الذكية',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 16),
+            size: AppPaddings.largeIconSize, color: AppColors.primaryColor),
+        AppPaddings.mediumHeight,
+        Text('حصالة نبض الذكية',
+            style: AppTextStyles.headline2.copyWith(
+                fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        AppPaddings.mediumHeight,
         Text(
-          'ما رأيك في تقريب المبلغ إلى ${roundUpAmount.toStringAsFixed(0)} ريال وادخار ${difference.toStringAsFixed(0)} ريال إضافية؟',
+            'ما رأيك في تقريب المبلغ إلى ${roundUpAmount.toStringAsFixed(0)} ريال وادخار ${difference.toStringAsFixed(0)} ريال إضافية?',
           textAlign: TextAlign.center,
-          style: TextStyle(
-              fontSize: 16,
+            style: AppTextStyles.bodyText2
+                .copyWith(
               height: 1.5,
-              color: Theme.of(context).textTheme.bodyMedium?.color),
-        ),
-        const SizedBox(height: 24),
+              color: AppColors.textSecondary)),
+        AppPaddings.largeHeight,
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
@@ -88,16 +91,12 @@ class _RoundUpSuggestionCardState extends State<RoundUpSuggestionCard> {
             child: const Text('نعم! أضفها لهدفي'),
           ),
         ),
-        const SizedBox(height: 8),
+        AppPaddings.smallHeight,
         TextButton(
           onPressed: widget.onDismiss,
           child: Text('لا، شكراً',
-              style: TextStyle(
-                  color: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.color
-                      ?.withOpacity(0.7))),
+              style: AppTextStyles.bodyText2
+                  .copyWith(color: AppColors.textSecondary.withOpacity(0.7))),
         ),
       ],
     );
@@ -112,9 +111,10 @@ class _RoundUpSuggestionCardState extends State<RoundUpSuggestionCard> {
       key: const ValueKey('selection'),
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Text('اختر الهدف',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 16),
+        Text('اختر الهدف',
+            style: AppTextStyles.headline2.copyWith(
+                fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
+        AppPaddings.mediumHeight,
         if (goals.isEmpty)
           const Text('ليس لديك أهداف لإضافة المبلغ إليها.')
         else
@@ -126,11 +126,13 @@ class _RoundUpSuggestionCardState extends State<RoundUpSuggestionCard> {
               itemBuilder: (context, index) {
                 final goal = goals[index];
                 return Card(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  margin: const EdgeInsets.symmetric(vertical: 4),
+                  color: AppColors.cardLight,
+                  margin: EdgeInsets.symmetric(vertical: AppPaddings.tiny.vertical),
                   child: ListTile(
                     leading: Icon(goal.icon, color: goal.color),
-                    title: Text(goal.name),
+                    title: Text(goal.name,
+                        style: AppTextStyles.bodyText1
+                            .copyWith(color: AppColors.textPrimary)),
                     onTap: () {
                       // 6. عند اختيار الهدف، ننفذ الإجراء ونغلق الواجهة
                       appData.addSavingsToGoal(goal, difference);
@@ -141,7 +143,7 @@ class _RoundUpSuggestionCardState extends State<RoundUpSuggestionCard> {
               },
             ),
           ),
-        const SizedBox(height: 16),
+        AppPaddings.mediumHeight,
         TextButton(
           onPressed: () {
             // العودة إلى شاشة الاقتراح
@@ -150,12 +152,8 @@ class _RoundUpSuggestionCardState extends State<RoundUpSuggestionCard> {
             });
           },
           child: Text('رجوع',
-              style: TextStyle(
-                  color: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.color
-                      ?.withOpacity(0.7))),
+              style: AppTextStyles.bodyText2
+                  .copyWith(color: AppColors.textSecondary.withOpacity(0.7))),
         ),
       ],
     );

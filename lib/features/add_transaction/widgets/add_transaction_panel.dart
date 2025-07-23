@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:nabd/data/app_data.dart';
+import 'package:nabd/theme/app_colors.dart';
+import 'package:nabd/theme/app_paddings.dart';
+import 'package:nabd/theme/app_text_styles.dart';
 import 'package:nabd/features/add_transaction/widgets/round_up_suggestion_card.dart';
 import 'package:nabd/features/categories/models/category_model.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
@@ -29,6 +32,29 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
   bool _showRoundUpSuggestion = false;
   late Transaction _savedTransaction;
   late TransactionType _selectedType;
+
+  void _onNumpadTap(String value) {
+    setState(() {
+      if (value == 'backspace') {
+        if (_amount.isNotEmpty) {
+          _amount = _amount.substring(0, _amount.length - 1);
+        }
+        if (_amount.isEmpty) {
+          _amount = '0';
+        }
+      } else if (value == '.') {
+        if (!_amount.contains('.')) {
+          _amount += value;
+        }
+      } else {
+        if (_amount == '0' && value != '.') {
+          _amount = value;
+        } else {
+          _amount += value;
+        }
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -71,17 +97,22 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
   @override
   Widget build(BuildContext context) {
     final typeColor = _selectedType == TransactionType.expense
-        ? Colors.red.shade400
-        : Colors.green.shade400;
+        ? AppColors.expenseColor
+        : AppColors.incomeColor;
 
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
-      padding: EdgeInsets.fromLTRB(
-          20, 12, 20, MediaQuery.of(context).viewInsets.bottom + 20),
-      // 4. استخدام AnimatedSwitcher للانتقال السلس بين الواجهتين
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 400),
         transitionBuilder: (child, animation) {
@@ -89,7 +120,10 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
             position: Tween<Offset>(
               begin: const Offset(0.0, 1.0),
               end: Offset.zero,
-            ).animate(animation),
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOutQuart,
+            )),
             child: child,
           );
         },
@@ -110,9 +144,10 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
       children: [
         Container(
           width: 40,
-          height: 5,
+          height: 4,
+          margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
-            color: Theme.of(context).dividerColor,
+            color: Theme.of(context).dividerColor.withOpacity(0.5),
             borderRadius: BorderRadius.circular(12),
           ),
         ),
@@ -129,8 +164,21 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
           width: double.infinity,
           child: ElevatedButton(
             onPressed: _saveTransaction,
-            style: ElevatedButton.styleFrom(backgroundColor: typeColor),
-            child: const Text('حفظ'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: typeColor,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              'حفظ',
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
           ),
         ),
       ],
@@ -141,7 +189,7 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Theme.of(context).scaffoldBackgroundColor,
+        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -158,20 +206,19 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
     final bool isSelected = _selectedType == type;
     // 3. الألوان الآن ذكية
     final Color selectedColor = type == TransactionType.expense
-        ? Colors.red.shade400
-        : Colors.green.shade400;
+        ? AppColors.expenseColor
+        : AppColors.incomeColor;
 
     return Expanded(
       child: GestureDetector(
         onTap: () {
           setState(() {
             _selectedType = type;
-            // _selectedCategoryName = null;
           });
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
             color: isSelected ? selectedColor : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
@@ -179,11 +226,11 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
           child: Text(
             text,
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
               fontWeight: FontWeight.bold,
               color: isSelected
                   ? Colors.white
-                  : Theme.of(context).textTheme.bodyMedium?.color,
+                      : Theme.of(context).colorScheme.onSurface,
             ),
           ),
         ),
@@ -230,63 +277,82 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
     );
   }
 
-  void _onNumpadTapped(String value) {
-    setState(() {
-      if (value == '⌫') {
-        _amount =
-            _amount.length > 1 ? _amount.substring(0, _amount.length - 1) : '0';
-      } else if (_amount == '0' && value != '.') {
-        _amount = value;
-      } else {
-        if (value == '.' && _amount.contains('.')) return;
-        _amount += value;
-      }
-    });
-  }
-
   Widget _buildAmountDisplay(BuildContext context, Color typeColor) {
-    return Column(children: [
-      // 5. الرقم أيضاً يأخذ لون النوع
-      Text(_amount,
-          style: Theme.of(context)
-              .textTheme
-              .titleLarge
-              ?.copyWith(fontSize: 52, color: typeColor)),
-      Text('ريال يمني',
-          style:
-              Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 18)),
-    ]);
+    return Column(
+      children: [
+        Text(
+          _amount,
+          style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                color: typeColor,
+                fontWeight: FontWeight.bold,
+              ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'ريال يمني',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+              ),
+        ),
+      ],
+    );
   }
 
   Widget _buildNumpad(BuildContext context) {
-    final buttons = [
-      '1',
-      '2',
-      '3',
-      '4',
-      '5',
-      '6',
-      '7',
-      '8',
-      '9',
-      '.',
-      '0',
-      '⌫'
-    ];
     return GridView.builder(
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 3, childAspectRatio: 1.5),
-      itemCount: buttons.length,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemBuilder: (context, index) => TextButton(
-        onPressed: () => _onNumpadTapped(buttons[index]),
-        style: TextButton.styleFrom(
-          foregroundColor: Theme.of(context).textTheme.titleLarge?.color,
-          shape: const CircleBorder(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 3,
+        childAspectRatio: 1.8,
+        crossAxisSpacing: 8.0,
+        mainAxisSpacing: 8.0,
+      ),
+      itemCount: 12,
+      itemBuilder: (context, index) {
+        final String text = _getNumpadText(index);
+        return _buildNumpadButton(context, text);
+      },
+    );
+  }
+
+  String _getNumpadText(int index) {
+    if (index < 9) {
+      return (index + 1).toString();
+    } else if (index == 9) {
+      return '.';
+    } else if (index == 10) {
+      return '0';
+    } else {
+      return 'backspace';
+    }
+  }
+
+  Widget _buildNumpadButton(BuildContext context, String text) {
+    return InkWell(
+      onTap: () => _onNumpadTap(text),
+      borderRadius: BorderRadius.circular(12),
+      hoverColor: Theme.of(context).cardColor.withOpacity(0.5),
+      splashColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+      highlightColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(12),
         ),
-        child: Text(buttons[index],
-            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+        child: Center(
+          child: text == 'backspace'
+              ? Icon(Icons.backspace_outlined,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  size: Theme.of(context).textTheme.headlineMedium?.fontSize)
+              : Text(
+                  text,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.normal,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                ),
+        ),
       ),
     );
   }

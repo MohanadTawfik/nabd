@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:nabd/theme/app_paddings.dart';
+import 'package:nabd/theme/app_text_styles.dart';
+import 'package:nabd/theme/app_colors.dart';
 import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/budgets/screens/budgets_screen.dart';
 import 'package:provider/provider.dart'; // سيتم إنشاؤه لاحقاً
@@ -25,11 +28,9 @@ class BudgetsCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('درع الميزانية',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold)),
+                Text('درع الميزانية',
+                    style: AppTextStyles.headline2
+                        .copyWith(color: AppColors.textDark)),
                 TextButton(
                   onPressed: () {
                     Navigator.push(
@@ -38,18 +39,19 @@ class BudgetsCard extends StatelessWidget {
                           builder: (context) => const BudgetsScreen()),
                     );
                   },
-                  child: const Text('إدارة',
-                      style: TextStyle(color: Color(0xff8952ff))),
+                  child: Text('إدارة',
+                      style: AppTextStyles.buttonText
+                          .copyWith(color: AppColors.primaryDark)),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            AppPaddings.smallHeight,
             Card(
-              color: const Color(0xff161b22),
+              color: Theme.of(context).cardColor,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16)),
               child: Padding(
-                padding: const EdgeInsets.all(16.0),
+                padding: AppPaddings.allMedium,
                 child: Column(
                   children: budgetsToShow.map((budget) {
                     final progress = budget.totalAmount > 0
@@ -84,7 +86,7 @@ class BudgetsCard extends StatelessWidget {
         ? Colors.green
         : (progress < 0.9 ? Colors.orange : Colors.red);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: AppPaddings.verticalSmall,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -92,13 +94,14 @@ class BudgetsCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(name,
-                  style: const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.bold)),
+                  style: AppTextStyles.subtitle2
+                      .copyWith(color: AppColors.textDark)),
               Text('${spent.toStringAsFixed(0)} / ${total.toStringAsFixed(0)}',
-                  style: const TextStyle(color: Colors.white70)),
+                  style: AppTextStyles.bodyText1
+                      .copyWith(color: AppColors.subtextDark)),
             ],
           ),
-          const SizedBox(height: 8),
+          AppPaddings.smallHeight,
           LinearProgressIndicator(
             value: progress,
             backgroundColor: color.withOpacity(0.2),

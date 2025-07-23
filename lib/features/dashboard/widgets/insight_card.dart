@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:nabd/data/app_data.dart';
+import 'package:nabd/theme/app_paddings.dart';
+import 'package:nabd/theme/app_text_styles.dart';
+import 'package:nabd/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 
 // // 1. الأيقونة
@@ -32,22 +35,23 @@ class InsightCard extends StatelessWidget {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: AppPaddings.allMedium,
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: AppPaddings.allSmall,
                   decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.15),
+                    color:
+                        Theme.of(context).colorScheme.primary.withOpacity(0.15),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.lightbulb_outline,
-                    color: Theme.of(context).primaryColor,
+                    color: Theme.of(context).colorScheme.primary,
                     size: 28,
                   ),
                 ),
-                const SizedBox(width: 16),
+                AppPaddings.mediumWidth,
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,15 +60,17 @@ class InsightCard extends StatelessWidget {
                         'نصيحة اليوم',
                         style: Theme.of(context)
                             .textTheme
-                            .titleMedium
-                            
+                            .titleMedium!
+                            .copyWith(
+                                color: Theme.of(context).colorScheme.onSurface),
                       ),
-                      const SizedBox(height: 4),
+                      AppPaddings.extraSmallHeight,
                       // 3. عرض النصيحة الديناميكية
                       Text(
                         insightText,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
+                        style: Theme.of(context).textTheme.bodyMedium!.copyWith(
+                            color: Theme.of(context).colorScheme.onSurface),
+                      ), 
                     ],
                   ),
                 ),

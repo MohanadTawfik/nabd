@@ -1,5 +1,8 @@
 import 'dart:math';
 import 'dart:ui';
+import 'package:nabd/theme/app_colors.dart';
+import 'package:nabd/theme/app_paddings.dart';
+import 'package:nabd/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:nabd/features/add_transaction/widgets/add_transaction_panel.dart';
 import 'package:nabd/features/scanner/screens/smart_scanner_screen.dart';
@@ -59,9 +62,22 @@ class _MagicFabState extends State<MagicFab>
             GestureDetector(
               onTap: _toggleMenu,
               child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-                child: Container(
-                  color: Colors.black.withOpacity(0.6),
+                filter: ImageFilter.blur(sigmaX: 8.0, sigmaY: 8.0),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                  decoration: BoxDecoration(
+                    color:
+                        Theme.of(context).colorScheme.surface.withOpacity(0.85),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context).shadowColor.withOpacity(0.08),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -94,19 +110,19 @@ class _MagicFabState extends State<MagicFab>
       {
         'label': 'مصروف',
         'icon': Icons.arrow_downward,
-        'color': Colors.red.shade400,
+        'color': AppColors.expenseColor,
         'type': TransactionType.expense
       },
       {
         'label': 'مسح فاتورة',
         'icon': Icons.camera_alt,
-        'color': Colors.blue.shade400,
+        'color': AppColors.accentColor,
         'type': null
       },
       {
         'label': 'دخل',
         'icon': Icons.arrow_upward,
-        'color': Colors.green.shade400,
+        'color': AppColors.incomeColor,
         'type': TransactionType.income
       },
     ];
@@ -171,17 +187,17 @@ class _MagicFabState extends State<MagicFab>
         fabRenderBox.localToGlobal(fabRenderBox.size.center(Offset.zero));
 
     return Positioned(
-      top: fabCenter.dy - (56 / 2), // 56 هو حجم الزر الافتراضي
+      top: fabCenter.dy - (56 / 2),
       left: fabCenter.dx - (56 / 2),
       child: FloatingActionButton(
         onPressed: _toggleMenu,
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        shape: const CircleBorder(),
         child: AnimatedIcon(
           icon: AnimatedIcons.menu_close,
           progress: _controller,
-          color: Colors.white,
+          color: Theme.of(context).colorScheme.onPrimary,
           size: 30,
-
         ),
       ),
     );
@@ -196,24 +212,38 @@ class _MagicFabState extends State<MagicFab>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          FloatingActionButton(
-            onPressed: onPressed,
-            backgroundColor: color,  
-            mini: true,
-            heroTag: label,
-            child: Icon(
-              icon,
-              color: Colors.white,
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: color.withOpacity(0.25),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: FloatingActionButton(
+              onPressed: onPressed,
+              backgroundColor: color,
+              shape: const CircleBorder(),
+              child: Icon(icon, color: Theme.of(context).colorScheme.onPrimary),
+              mini: true,
+              heroTag: label,
+              elevation: 0,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
           Material(
             type: MaterialType.transparency,
-            child: Text(label,
-                style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12)),
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
+                  ),
+            ),
           ),
         ],
       ),
@@ -228,7 +258,12 @@ class _MagicFabState extends State<MagicFab>
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => AddTransactionPanel(initialType: type),
-    );
+    ).whenComplete(() {
+      // Ensure overlay is removed if modal is dismissed by dragging or back button
+      if (_controller.isCompleted) {
+        _toggleMenu();
+      }
+    });
   }
 
   Future<void> _showScanner() async {
@@ -243,11 +278,41 @@ class _MagicFabState extends State<MagicFab>
   Widget build(BuildContext context) {
     // 5. الزر الرئيسي الآن هو مجرد "مرساة" غير مرئية لتحديد الموقع
     // وهو أيضاً الزر الذي يظهر عندما تكون القائمة مغلقة
-    return FloatingActionButton(
-      key: _fabKey,
-      onPressed: _toggleMenu,
-      backgroundColor: Theme.of(context).primaryColor,
-      child: const Icon(Icons.add, color: Colors.white, size: 30),
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(32),
+        boxShadow: [
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: FloatingActionButton(
+        key: _fabKey,
+        onPressed: _toggleMenu,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(32),
+        ),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.all(12),
+          child: Icon(
+            Icons.add_rounded,
+            size: 32,
+            weight: 600,
+          ),
+        ),
+      ),
     );
   }
 

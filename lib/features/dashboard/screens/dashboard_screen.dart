@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:nabd/theme/app_paddings.dart';
+import 'package:nabd/theme/app_text_styles.dart';
 import 'package:nabd/features/dashboard/widgets/balance_card_widget.dart';
 import 'package:nabd/features/dashboard/widgets/budgets_card.dart';
 import 'package:nabd/features/dashboard/widgets/expenses_section.dart';
@@ -15,7 +17,7 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('مرحباً مهند!'),
+        title: const Text('مرحباً مهند!', style: AppTextStyles.headline2),
         actions: [
           IconButton(
             icon: const Icon(Icons.search),
@@ -29,11 +31,19 @@ class DashboardScreen extends StatelessWidget {
       ),
       body: ListView(
         // استخدام ListView لضمان التمرير السلس
-        padding: const EdgeInsets.all(16.0),
+        padding: AppPaddings.allMedium.copyWith(
+          bottom: MediaQuery.of(context).padding.bottom + 16,
+        ),
         children: const [
+          LevelIndicatorWidget(),
+          AppPaddings.largeHeight,
           BalanceCardWidget(),
-          SizedBox(height: 24),
+          AppPaddings.largeHeight,
+          InsightCard(),
+          AppPaddings.largeHeight,
           RecentTransactionsWidget(),
+          AppPaddings.largeHeight,
+          BudgetsCard(),
         ],
       ),
       // body: SingleChildScrollView(

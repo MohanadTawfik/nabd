@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:nabd/theme/app_colors.dart';
+import 'package:nabd/theme/app_paddings.dart';
 import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
+import 'package:nabd/features/transactions/screens/transactions_screen.dart';
 import 'package:nabd/theme/app_themes.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
@@ -24,6 +27,12 @@ class RecentTransactionsWidget extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium),
                 TextButton(
                   onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const TransactionsScreen(),
+                      ),
+                    );
                     // الانتقال لشاشة سجل المعاملات
                   },
                   child: Text('عرض الكل',
@@ -31,7 +40,7 @@ class RecentTransactionsWidget extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            AppPaddings.smallHeight,
             Card(
               color: Theme.of(context).cardColor,
               elevation: 0,
@@ -54,7 +63,7 @@ class RecentTransactionsWidget extends StatelessWidget {
   Widget _buildTransactionTile(
       BuildContext context, Transaction transaction, bool isLast) {
     final isExpense = transaction.type == TransactionType.expense;
-    final color = isExpense ? AppThemes.expenseColor : AppThemes.incomeColor;
+    final color = isExpense ? AppColors.expenseColor : AppColors.incomeColor;
     final format = NumberFormat.currency(locale: 'ar', symbol: '');
 
     return Column(

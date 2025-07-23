@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:nabd/theme/app_paddings.dart';
+import 'package:nabd/theme/app_text_styles.dart';
+import 'package:nabd/theme/app_colors.dart';
 import 'goal_item_widget.dart';
 
 class GoalsSection extends StatelessWidget {
@@ -17,18 +20,17 @@ class GoalsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'سباق الأهداف',
-          style: TextStyle(
-              color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+          style: AppTextStyles.headline2.copyWith(color: AppColors.textLight),
         ),
-        const SizedBox(height: 16),
+        AppPaddings.mediumHeight,
         SizedBox(
           height: 110, // ارتفاع محدد للقائمة الأفقية
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: goals.length,
-            separatorBuilder: (context, index) => const SizedBox(width: 16),
+            separatorBuilder: (context, index) => AppPaddings.mediumWidth,
             itemBuilder: (context, index) {
               final goal = goals[index];
               return GoalItemWidget(

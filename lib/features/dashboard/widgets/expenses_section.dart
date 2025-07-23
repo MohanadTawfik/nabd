@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:nabd/theme/app_paddings.dart';
+import 'package:nabd/theme/app_text_styles.dart';
+import 'package:nabd/theme/app_colors.dart';
 import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:nabd/features/transactions/screens/transactions_screen.dart';
@@ -51,10 +54,8 @@ const ExpensesSection({super.key});
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('أكبر النفقات هذا الشهر',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleLarge
-                        ?.copyWith(fontSize: 20)),
+                    style: AppTextStyles.headline2
+                        .copyWith(color: AppColors.textLight)),
                 // 2. إضافة زر "عرض الكل"
                 TextButton(
                   onPressed: () {
@@ -65,21 +66,23 @@ const ExpensesSection({super.key});
                     );
                   },
                   child: Text('عرض الكل',
-                      style: TextStyle(color: Theme.of(context).primaryColor)),
+                      style: AppTextStyles.buttonText
+                          .copyWith(color: AppColors.primaryLight)),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            AppPaddings.smallHeight,
             if (expensesData.isEmpty)
               Card(
                 color: Theme.of(context).cardColor,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16)),
-                child: const Padding(
-                  padding: EdgeInsets.all(40.0),
+                child: Padding(
+                    padding: AppPaddings.allLarge,
                   child: Center(
                       child: Text('لا توجد مصروفات لعرضها بعد',
-                          style: TextStyle(color: Colors.white54))),
+                            style: AppTextStyles.bodyText1
+                                .copyWith(color: AppColors.textSecondary)))
                 ),
               )
             else
@@ -88,7 +91,7 @@ const ExpensesSection({super.key});
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16)),
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: AppPaddings.allMedium,
                   child: ListView.separated(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -96,7 +99,7 @@ const ExpensesSection({super.key});
                         ? 3
                         : expensesData.length, // عرض أكبر 3 فقط
                     separatorBuilder: (context, index) =>
-                        const SizedBox(height: 20),
+                        AppPaddings.mediumHeight,
                     itemBuilder: (context, index) {
                       final expense = expensesData[index];
                       final totalExpenses = appData.totalExpense;
@@ -130,26 +133,20 @@ const ExpensesSection({super.key});
     final format = NumberFormat("#,##0", "en_US");
     return Row(children: [
       Icon(icon, color: color, size: 28),
-      const SizedBox(width: 12),
+      AppPaddings.smallWidth,
       Expanded(
           child:
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Text(
             name,
-            // style: Theme.of(context)
-            //     .textTheme
-            //     .titleMedium
-            //     ?.copyWith(fontSize: 16)
+            style: AppTextStyles.subtitle2.copyWith(color: AppColors.textLight),
           ),
           Text('${format.format(amount)} ريال',
-            // style: Theme.of(context)
-            //     .textTheme
-            //     .titleMedium
-            //     ?.copyWith(fontSize: 16)
+            style: AppTextStyles.subtitle2.copyWith(color: AppColors.textLight),
           ),
         ]),
-        const SizedBox(height: 8),
+        AppPaddings.smallHeight,
         LinearProgressIndicator(
             value: percentage,
             backgroundColor: color.withOpacity(0.2),

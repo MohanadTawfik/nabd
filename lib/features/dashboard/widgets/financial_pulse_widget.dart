@@ -2,7 +2,9 @@ import 'package:animated_digit/animated_digit.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:nabd/data/app_data.dart';
-import 'package:nabd/theme/app_themes.dart';
+import 'package:nabd/theme/app_colors.dart';
+import 'package:nabd/theme/app_text_styles.dart';
+import 'package:nabd/theme/app_paddings.dart';
 import 'package:provider/provider.dart';
 import 'package:simple_gradient_text/simple_gradient_text.dart';
 import 'dart:ui' as ui;
@@ -42,8 +44,7 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
     super.dispose();
   }
 List<Color> _getPulseColors(double expenseRatio) {
-    // الآن نستخدم الألوان المعرفة في الثيم
-    final color = Color.lerp(AppThemes.incomeColor, AppThemes.expenseColor,
+    final color = Color.lerp(AppColors.incomeColor, AppColors.expenseColor,
         expenseRatio.clamp(0.0, 1.0))!;
     return [color.withOpacity(0.8), color];
   }
@@ -107,25 +108,22 @@ List<Color> _getPulseColors(double expenseRatio) {
                         color: Colors.green.withOpacity(0.5), size: 24),
 
                   Text('رصيدك الحالي',
-                      style: Theme.of(context).textTheme.bodyMedium),
-                  const SizedBox(height: 8),
+                      style: AppTextStyles.bodyText2.copyWith(color: AppColors.textLight)),
+                  AppPaddings.smallHeight,
 
                   Directionality(
                     // 2. هذا هو الإصلاح: نحدد بوضوح أننا نريد TextDirection من مكتبة ui
                     textDirection: ui.TextDirection.ltr,
                     child: AnimatedDigitWidget(
                       value: balance,
-                      textStyle: Theme.of(context)
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(fontSize: 40, color: Colors.white),
+                      textStyle: AppTextStyles.headline1.copyWith(color: AppColors.textLight),
                       fractionDigits: 0,
                       duration: const Duration(milliseconds: 500),
                       enableSeparator: true,
                     ),
                   ),
                   Text('ريال يمني',
-                      style: Theme.of(context).textTheme.bodyMedium),
+                      style: AppTextStyles.bodyText2.copyWith(color: AppColors.textLight)),
                 ],
               ),
             ),

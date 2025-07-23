@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:nabd/theme/app_paddings.dart';
+import 'package:nabd/theme/app_text_styles.dart';
+import 'package:nabd/theme/app_colors.dart';
 import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/add_transaction/widgets/add_transaction_panel.dart';
 import 'package:provider/provider.dart';
@@ -16,7 +19,7 @@ class BalanceCardWidget extends StatelessWidget {
         final format = NumberFormat.currency(locale: 'ar', symbol: '');
 
         return Container(
-          padding: const EdgeInsets.all(24),
+          padding: AppPaddings.allLarge,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
             gradient: LinearGradient(
@@ -43,10 +46,7 @@ class BalanceCardWidget extends StatelessWidget {
                 children: [
                   Text(
                     'الرصيد الحالي',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(color: Colors.white70),
+                    style: AppTextStyles.subtitle1.copyWith(color: AppColors.textDark.withOpacity(0.7)),
                   ),
                   GestureDetector(
                     onTap: () {
@@ -64,13 +64,10 @@ class BalanceCardWidget extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              AppPaddings.smallHeight,
               Text(
                 '${format.format(appData.currentBalance)} ريال',
-                style: Theme.of(context)
-                    .textTheme
-                    .titleLarge
-                    ?.copyWith(fontSize: 36, color: Colors.white),
+                style: AppTextStyles.headline1.copyWith(fontSize: 36, color: AppColors.textDark),
               ),
             ],
           ),
