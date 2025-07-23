@@ -29,8 +29,9 @@ class BudgetsCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('درع الميزانية',
-                    style: AppTextStyles.headline2
-                        .copyWith(color: AppColors.textDark)),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface)),
                 TextButton(
                   onPressed: () {
                     Navigator.push(
@@ -40,16 +41,18 @@ class BudgetsCard extends StatelessWidget {
                     );
                   },
                   child: Text('إدارة',
-                      style: AppTextStyles.buttonText
-                          .copyWith(color: AppColors.primaryDark)),
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.primary)),
                 ),
               ],
             ),
             AppPaddings.smallHeight,
             Card(
-              color: Theme.of(context).cardColor,
+              elevation: 4,
+              shadowColor: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16)),
+              color: Theme.of(context).colorScheme.surface,
               child: Padding(
                 padding: AppPaddings.allMedium,
                 child: Column(
@@ -94,18 +97,18 @@ class BudgetsCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(name,
-                  style: AppTextStyles.subtitle2
-                      .copyWith(color: AppColors.textDark)),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurface)),
               Text('${spent.toStringAsFixed(0)} / ${total.toStringAsFixed(0)}',
-                  style: AppTextStyles.bodyText1
-                      .copyWith(color: AppColors.subtextDark)),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ],
           ),
           AppPaddings.smallHeight,
           LinearProgressIndicator(
             value: progress,
-            backgroundColor: color.withOpacity(0.2),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
+            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+            valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
             minHeight: 10,
             borderRadius: BorderRadius.circular(5),
           ),

@@ -23,8 +23,13 @@ class RecentTransactionsWidget extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('آخر المعاملات',
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  'آخر المعاملات',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                ),
                 TextButton(
                   onPressed: () {
                     Navigator.push(
@@ -33,27 +38,54 @@ class RecentTransactionsWidget extends StatelessWidget {
                         builder: (context) => const TransactionsScreen(),
                       ),
                     );
-                    // الانتقال لشاشة سجل المعاملات
                   },
-                  child: Text('عرض الكل',
-                      style: TextStyle(color: Theme.of(context).primaryColor)),
+                  child: Text(
+                    'عرض الكل',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                  ),
                 ),
               ],
             ),
             AppPaddings.smallHeight,
-            Card(
-              color: Theme.of(context).cardColor,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
-              child: Column(
-                children: List.generate(recentTransactions.length, (index) {
-                  final transaction = recentTransactions[index];
-                  return _buildTransactionTile(context, transaction,
-                      index == recentTransactions.length - 1);
-                }),
+            if (recentTransactions.isEmpty)
+              Card(
+                color: Theme.of(context).colorScheme.surface,
+                elevation: 4,
+                shadowColor: Theme.of(context).colorScheme.shadow,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Padding(
+                  padding: AppPaddings.allLarge,
+                  child: Center(
+                    child: Text(
+                      'لا توجد معاملات لعرضها بعد',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                    ),
+                  ),
+                ),
+              )
+            else
+              Card(
+                color: Theme.of(context).colorScheme.surface,
+                elevation: 4,
+                shadowColor: Theme.of(context).colorScheme.shadow,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: List.generate(recentTransactions.length, (index) {
+                    final transaction = recentTransactions[index];
+                    return _buildTransactionTile(context, transaction,
+                        index == recentTransactions.length - 1);
+                  }),
+                ),
               ),
-            ),
           ],
         );
       },
@@ -76,20 +108,25 @@ class RecentTransactionsWidget extends StatelessWidget {
             child: Icon(transaction.category.icon,
                 color: transaction.category.color, size: 20),
           ),
-          title: Text(transaction.category.name,
-              style: Theme.of(context).textTheme.titleSmall),
-          subtitle: Text(DateFormat.yMMMd('ar').format(transaction.date),
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(fontSize: 12)),
+          title: Text(
+            transaction.category.name,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.onSurface,
+                ),
+          ),
+          subtitle: Text(
+            DateFormat.yMMMd('ar').format(transaction.date),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
           trailing: Text(
             '${isExpense ? '-' : '+'}${format.format(transaction.amount)} ريال',
-            style: TextStyle(
-                color: color,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'Tajawal'),
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: color,
+                  fontWeight: FontWeight.bold,
+                ),
           ),
         ),
         if (!isLast)
