@@ -19,33 +19,60 @@ class ConfirmationDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      backgroundColor: AppColors.cardLight,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Text(title,
-          style: AppTextStyles.headline2.copyWith(color: AppColors.textLight)),
+          textAlign: TextAlign.center,
+          style: Theme.of(context)
+              .textTheme
+              .headlineSmall
+              ?.copyWith(color: Theme.of(context).colorScheme.onSurface)),
       content: Text(content,
-          style: AppTextStyles.bodyText1.copyWith(color: AppColors.textLight)),
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurface
+                  .withAlpha((255 * 0.6).round()))),
       actions: <Widget>[
-        TextButton(
-          child: Text('إلغاء',
-              style: AppTextStyles.buttonText
-                  .copyWith(color: AppColors.textSecondary)),
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.expenseColor,
-            foregroundColor: AppColors.textLight,
-            padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            Expanded(
+              child: TextButton(
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12.0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text('إلغاء',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant)),
+              ),
             ),
-          ),
-          
-          onPressed: onConfirm,
-          child: Text('تأكيد الحذف', style: AppTextStyles.buttonText),
+            const SizedBox(width: 8.0), // Spacing between buttons
+            Expanded(
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  foregroundColor: Theme.of(context).colorScheme.onError,
+                  padding: const EdgeInsets.symmetric(vertical: 12.0),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: onConfirm,
+                child: Text('تأكيد الحذف',
+                    style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onError)),
+              ),
+            ),
+          ],
         ),
       ],
     );

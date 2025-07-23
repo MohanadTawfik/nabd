@@ -19,7 +19,6 @@ class BalanceCardWidget extends StatelessWidget {
       builder: (context, appData, child) {
         final format = NumberFormat.currency(locale: 'ar', symbol: '');
 
-        var currentBalance = appData.currentBalance;
         return Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -80,7 +79,7 @@ class BalanceCardWidget extends StatelessWidget {
               const SizedBox(height: 16), // Consistent spacing
 
               Text(
-                '${format.format(currentBalance)} ريال ',
+                '${format.format(appData.currentBalance)} ريال ',
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                   color:
                       Theme.of(context).colorScheme.onPrimary.withOpacity(0.9),
