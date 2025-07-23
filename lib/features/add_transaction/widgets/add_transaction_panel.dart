@@ -90,6 +90,7 @@ class _AddTransactionPanelState extends State<AddTransactionPanel> {
       appData.updateTransaction(transaction);
     } else {
       appData.addTransaction(transaction);
+      
     }
     Navigator.pop(context);
   }

@@ -65,38 +65,52 @@ class _RoundUpSuggestionCardState extends State<RoundUpSuggestionCard> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(Icons.savings_outlined,
-            size: AppPaddings.largeIconSize, color: AppColors.primaryColor),
-        AppPaddings.mediumHeight,
+            size: 64, color: Theme.of(context).colorScheme.primary),
+        const SizedBox(height: 16),
         Text('حصالة نبض الذكية',
-            style: AppTextStyles.headline2.copyWith(
-                fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-        AppPaddings.mediumHeight,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface)),
+        const SizedBox(height: 8),
         Text(
             'ما رأيك في تقريب المبلغ إلى ${roundUpAmount.toStringAsFixed(0)} ريال وادخار ${difference.toStringAsFixed(0)} ريال إضافية?',
           textAlign: TextAlign.center,
-            style: AppTextStyles.bodyText2
-                .copyWith(
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
               height: 1.5,
-              color: AppColors.textSecondary)),
-        AppPaddings.largeHeight,
+              color: Theme.of(context).colorScheme.onSurfaceVariant)),
+        const SizedBox(height: 24),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
             onPressed: () {
-              // 4. عند الضغط، ننتقل إلى مرحلة اختيار الهدف
               setState(() {
                 _isSelectingGoal = true;
               });
             },
-            child: const Text('نعم! أضفها لهدفي'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Theme.of(context).colorScheme.onPrimary,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 4,
+            ),
+            child: Text('نعم! أضفها لهدفي',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.onPrimary)),
           ),
         ),
-        AppPaddings.smallHeight,
+        const SizedBox(height: 8),
         TextButton(
           onPressed: widget.onDismiss,
+          style: TextButton.styleFrom(
+            foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+          ),
           child: Text('لا، شكراً',
-              style: AppTextStyles.bodyText2
-                  .copyWith(color: AppColors.textSecondary.withOpacity(0.7))),
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7))),
         ),
       ],
     );
@@ -112,29 +126,34 @@ class _RoundUpSuggestionCardState extends State<RoundUpSuggestionCard> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Text('اختر الهدف',
-            style: AppTextStyles.headline2.copyWith(
-                fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
-        AppPaddings.mediumHeight,
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSurface)),
+        const SizedBox(height: 16),
         if (goals.isEmpty)
-          const Text('ليس لديك أهداف لإضافة المبلغ إليها.')
+          Text('ليس لديك أهداف لإضافة المبلغ إليها.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant))
         else
-          // 5. بناء قائمة الأهداف القابلة للاختيار
           SizedBox(
-            height: 150, // تحديد ارتفاع لتجنب الأخطاء
+            height: 180, // Increased height for better scrollability
             child: ListView.builder(
               itemCount: goals.length,
               itemBuilder: (context, index) {
                 final goal = goals[index];
                 return Card(
-                  color: AppColors.cardLight,
-                  margin: EdgeInsets.symmetric(vertical: AppPaddings.tiny.vertical),
+                  color: Theme.of(context).cardColor, // Use theme card color
+                  margin: const EdgeInsets.symmetric(vertical: 6), // Consistent spacing
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), // Rounded corners
+                  elevation: 2, // Subtle shadow
                   child: ListTile(
-                    leading: Icon(goal.icon, color: goal.color),
+                    leading: Icon(goal.icon, color: goal.color, size: 30), // Larger icon
                     title: Text(goal.name,
-                        style: AppTextStyles.bodyText1
-                            .copyWith(color: AppColors.textPrimary)),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.onSurface)),
+                    trailing: Icon(Icons.arrow_forward_ios, size: 18, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
                     onTap: () {
-                      // 6. عند اختيار الهدف، ننفذ الإجراء ونغلق الواجهة
                       appData.addSavingsToGoal(goal, difference);
                       widget.onDismiss();
                     },
@@ -143,17 +162,19 @@ class _RoundUpSuggestionCardState extends State<RoundUpSuggestionCard> {
               },
             ),
           ),
-        AppPaddings.mediumHeight,
+        const SizedBox(height: 16),
         TextButton(
           onPressed: () {
-            // العودة إلى شاشة الاقتراح
             setState(() {
               _isSelectingGoal = false;
             });
           },
+          style: TextButton.styleFrom(
+            foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+          ),
           child: Text('رجوع',
-              style: AppTextStyles.bodyText2
-                  .copyWith(color: AppColors.textSecondary.withOpacity(0.7))),
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7))),
         ),
       ],
     );
