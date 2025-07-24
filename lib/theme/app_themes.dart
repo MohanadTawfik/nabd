@@ -6,8 +6,10 @@ class AppThemes {
   // ================== Dark Theme ==================
   static final ThemeData darkTheme = ThemeData(
     brightness: Brightness.dark,
-    fontFamily: 'Tajawal',
-    primaryColor: AppColors.primaryDark,
+    fontFamily: 'Cairo',
+    primaryColor: AppColors.primaryColor,
+    primaryColorLight: AppColors.primaryLight,
+    primaryColorDark: AppColors.primaryDark,
     scaffoldBackgroundColor: AppColors.backgroundDark,
     cardColor: AppColors.cardDark,
     dividerColor: AppColors.dividerDark,
@@ -43,8 +45,10 @@ class AppThemes {
   // ================== Light Theme ==================
   static final ThemeData lightTheme = ThemeData(
     brightness: Brightness.light,
-    fontFamily: 'Tajawal',
-    primaryColor: AppColors.primaryLight,
+    fontFamily: 'Cairo',
+    primaryColor: AppColors.primaryColor,
+    primaryColorLight: AppColors.primaryLight,
+    primaryColorDark: AppColors.primaryDark,
     scaffoldBackgroundColor: AppColors.backgroundLight,
     cardColor: AppColors.cardLight,
     dividerColor: AppColors.dividerLight,

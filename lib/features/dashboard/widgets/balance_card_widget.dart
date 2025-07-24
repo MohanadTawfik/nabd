@@ -4,7 +4,7 @@ import 'package:nabd/theme/app_paddings.dart';
 import 'package:nabd/theme/app_text_styles.dart';
 import 'package:nabd/theme/app_colors.dart';
 import 'package:nabd/data/app_data.dart';
-import 'package:nabd/features/add_transaction/widgets/add_transaction_panel.dart';
+import 'package:nabd/features/transactions/screens/add_transaction_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'dart:ui' as ui;
@@ -28,14 +28,17 @@ class BalanceCardWidget extends StatelessWidget {
                 Theme.of(context)
                     .colorScheme
                     .primary, // Use theme primary color
-                Theme.of(context).colorScheme.primary.withOpacity(0.7),
+                Theme.of(context).colorScheme.primary.withValues(alpha: 0.7),
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             boxShadow: [
               BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                color: Theme.of(context)
+                    .colorScheme
+                    .primary
+                    .withValues(alpha: 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -53,7 +56,7 @@ class BalanceCardWidget extends StatelessWidget {
                         color: Theme.of(context)
                             .colorScheme
                             .onPrimary
-                            .withOpacity(0.8),
+                            .withValues(alpha: 0.8),
                         fontWeight: FontWeight.w500),
                   ),
                   GestureDetector(
@@ -62,14 +65,14 @@ class BalanceCardWidget extends StatelessWidget {
                         context: context,
                         isScrollControlled: true,
                         backgroundColor: Colors.transparent,
-                        builder: (context) => const AddTransactionPanel(),
+                        builder: (context) => const AddTransactionScreen(),
                       );
                     },
                     child: CircleAvatar(
                       backgroundColor: Theme.of(context)
                           .colorScheme
                           .onPrimary
-                          .withOpacity(0.2),
+                          .withValues(alpha: 0.2),
                       child: Icon(Icons.add,
                           color: Theme.of(context).colorScheme.onPrimary),
                     ),

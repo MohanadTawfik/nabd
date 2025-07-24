@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nabd/features/categories/models/category_model.dart';
 
-
-enum TransactionType { expense, income }
+enum TransactionType { expense, income, debt }
 
 class Transaction {
   final String id;
@@ -11,12 +10,15 @@ class Transaction {
   final double amount;
   final TransactionType type;
   final DateTime date;
+  // حقل الملاحظات
+  final String notes;
 
   Transaction({
     required this.id,
-    required this.category, // مطلوب الآن
+    required this.category,
     required this.amount,
     required this.type,
     required this.date,
+    this.notes = '',
   });
 }

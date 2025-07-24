@@ -11,10 +11,9 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     // 1. نستخدم Provider.of للوصول إلى AppData
     final appData = Provider.of<AppData>(context);
-    
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('الإعدادات'),
@@ -59,6 +58,7 @@ class SettingsScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
+                          // builder: (context) => const FinanceScreen()),
                           builder: (context) => const ManageCategoriesScreen()),
                     );
                   },

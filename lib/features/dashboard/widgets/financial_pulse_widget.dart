@@ -22,7 +22,6 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
   // 2. أعدنا متحكم الأنيميشن
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-  
 
   @override
   void initState() {
@@ -43,7 +42,8 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
     _controller.dispose();
     super.dispose();
   }
-List<Color> _getPulseColors(double expenseRatio) {
+
+  List<Color> _getPulseColors(double expenseRatio) {
     final color = Color.lerp(AppColors.incomeColor, AppColors.expenseColor,
         expenseRatio.clamp(0.0, 1.0))!;
     return [color.withOpacity(0.8), color];
@@ -62,11 +62,10 @@ List<Color> _getPulseColors(double expenseRatio) {
         final balance = appData.currentBalance;
 
         // 2. حساب نسبة الإنفاق (المصروف / الدخل)
-       
+
         return AnimatedBuilder(
           animation: _controller,
           builder: (context, animChild) {
-
             return Center(
               child: Transform.scale(
                 scale: _scaleAnimation.value,
@@ -108,7 +107,8 @@ List<Color> _getPulseColors(double expenseRatio) {
                         color: Colors.green.withOpacity(0.5), size: 24),
 
                   Text('رصيدك الحالي',
-                      style: AppTextStyles.bodyText2.copyWith(color: AppColors.textLight)),
+                      style: AppTextStyles.bodyText2
+                          .copyWith(color: AppColors.textLight)),
                   AppPaddings.smallHeight,
 
                   Directionality(
@@ -116,14 +116,16 @@ List<Color> _getPulseColors(double expenseRatio) {
                     textDirection: ui.TextDirection.ltr,
                     child: AnimatedDigitWidget(
                       value: balance,
-                      textStyle: AppTextStyles.headline1.copyWith(color: AppColors.textLight),
+                      textStyle: AppTextStyles.headline1
+                          .copyWith(color: AppColors.textLight),
                       fractionDigits: 0,
                       duration: const Duration(milliseconds: 500),
                       enableSeparator: true,
                     ),
                   ),
                   Text('ريال يمني',
-                      style: AppTextStyles.bodyText2.copyWith(color: AppColors.textLight)),
+                      style: AppTextStyles.bodyText2
+                          .copyWith(color: AppColors.textLight)),
                 ],
               ),
             ),

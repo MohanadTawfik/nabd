@@ -4,7 +4,7 @@ import 'package:nabd/theme/app_colors.dart';
 import 'package:nabd/theme/app_paddings.dart';
 import 'package:nabd/theme/app_text_styles.dart';
 import 'package:flutter/material.dart';
-import 'package:nabd/features/add_transaction/widgets/add_transaction_panel.dart';
+import 'package:nabd/features/transactions/screens/add_transaction_screen.dart';
 import 'package:nabd/features/scanner/screens/smart_scanner_screen.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
 
@@ -176,8 +176,6 @@ class _MagicFabState extends State<MagicFab>
     return buttons;
   }
 
-
-
   // 4. ويدجت جديد لبناء الزر الرئيسي داخل الـ Overlay
   Widget _buildMainFab() {
     if (_fabKey.currentContext == null) return const SizedBox.shrink();
@@ -202,7 +200,7 @@ class _MagicFabState extends State<MagicFab>
       ),
     );
   }
-  
+
   Widget _actionButton(
       String label, IconData icon, Color color, VoidCallback onPressed) {
     // 3. تغليف الويدجت بـ SizedBox لضمان حجم ثابت ومحاذاة صحيحة
@@ -253,13 +251,11 @@ class _MagicFabState extends State<MagicFab>
   Future<void> _showAddPanel(TransactionType type) async {
     await _toggleMenu();
     if (!mounted) return;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => AddTransactionPanel(initialType: type),
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AddTransactionScreen(initialType: type),
+      ),
     ).whenComplete(() {
-      // Ensure overlay is removed if modal is dismissed by dragging or back button
       if (_controller.isCompleted) {
         _toggleMenu();
       }
@@ -315,6 +311,4 @@ class _MagicFabState extends State<MagicFab>
       ),
     );
   }
-
-  
 }
