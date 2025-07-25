@@ -56,12 +56,13 @@ class TransactionListItem extends StatelessWidget {
               width: 45,
               height: 45,
               decoration: BoxDecoration(
-                color: itemColor.withOpacity(0.15), // شفافية خفيفة للون الخلفية
+                color: transaction.category.color
+                    .withOpacity(0.15), // شفافية خفيفة للون الخلفية
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 transaction.category.icon,
-                color: itemColor, // لون الأيقونة
+                color: transaction.category.color, // لون الأيقونة
                 size: 25,
               ),
             ),

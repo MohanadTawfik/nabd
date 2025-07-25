@@ -1,6 +1,7 @@
 // add_transaction_screen.dart (Updated)
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/transactions/widgets/categories_panal.dart';
 import 'package:nabd/theme/app_colors.dart';
@@ -61,9 +62,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       _amount = t.amount;
       _selectedCategory = t.category;
       _selectedDate = t.date;
-      _notes = t.notes;
+      _notes = t.notes ?? '';
       _amountController.text = t.amount.toString();
-      _notesController.text = t.notes;
+      _notesController.text = _notes;
     } else {
       _selectedCategory =
           null; // نتركها null في البداية، ويجب على المستخدم اختيار فئة
@@ -111,6 +112,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       type: transactionType,
       date: _selectedDate,
       notes: _notes,
+      source: 'Manual',
     );
 
     final appData = Provider.of<AppData>(context, listen: false);
@@ -151,47 +153,44 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     );
   }
 
-  // تم نقل الـ Widgets _buildManualInput, _buildOCRInput, _buildNLPInput
-  // إلى امتدادات أو في ملفات منفصلة إذا كانت ستُستخدم فقط في شاشات معينة.
-  // في هذه الحالة، سأبقيهم هنا مؤقتًا لكن أضعهم ضمن الـ build
-  // وسأقوم بتعديلهم لاحقاً ليتوافقوا مع الهيكل الجديد.
-  // حالياً، _buildManualInput سيكون هو المحتوى الرئيسي.
-
+// Replace the entire _buildManualInputContent method with this:
   Widget _buildManualInputContent() {
-    // دالة مساعدة لتضمين محتوى الإدخال اليدوي
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final textTheme = theme.textTheme;
 
     return Form(
       key: _formKey,
       child: ListView(
-        // استخدام ListView بدلاً من Column لتجنب مشكلة الكيبورد
-        padding: EdgeInsets.zero, // إزالة أي padding افتراضي
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         children: [
-          // _buildTypeToggle(), // تم إزالته
-          // const SizedBox(height: 16), // لا حاجة للمسافة هنا بعد إزالة الـ Toggle
+          // Amount Input
           GlassCard(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: TextFormField(
               controller: _amountController,
-              keyboardType: TextInputType.number,
-              style: theme.textTheme.headlineMedium?.copyWith(
+              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              inputFormatters: [
+                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+              ],
+              style: textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.onSurface,
               ),
               textAlign: TextAlign.center,
               decoration: InputDecoration(
                 hintText: '0.00',
-                hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                hintStyle: textTheme.bodyLarge?.copyWith(
                   color: theme.hintColor.withOpacity(0.7),
                 ),
                 border: InputBorder.none,
                 suffixText: '﷼',
-                suffixStyle: theme.textTheme.bodyLarge?.copyWith(
+                suffixStyle: textTheme.bodyLarge?.copyWith(
                   color: theme.hintColor,
                 ),
-                errorStyle: theme.textTheme.bodySmall
-                    ?.copyWith(color: AppColors.errorColor),
+                errorStyle: textTheme.bodySmall?.copyWith(
+                  color: AppColors.errorColor,
+                ),
               ),
               onChanged: (value) {
                 setState(() {
@@ -210,41 +209,39 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               },
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
 
+          // Category Selection
           GlassCard(
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.zero,
             child: ListTile(
-              leading: _selectedCategory != null
-                  ? Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: _selectedCategory!.color.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        _selectedCategory!.icon,
-                        color: _selectedCategory!.color,
-                      ),
-                    )
-                  : Icon(
-                      Icons.category,
-                      color: (isDark ? AppColors.iconDark : AppColors.iconLight)
-                          .withOpacity(0.7),
-                    ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: _selectedCategory?.color.withOpacity(0.1) ??
+                      theme.colorScheme.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  _selectedCategory?.icon ?? Icons.category_outlined,
+                  color: _selectedCategory?.color ?? theme.colorScheme.primary,
+                  size: 24,
+                ),
+              ),
               title: Text(
                 _selectedCategory?.name ?? 'اختر الفئة',
-                style: theme.textTheme.bodyLarge?.copyWith(
+                style: textTheme.bodyLarge?.copyWith(
                   color: _selectedCategory != null
                       ? theme.colorScheme.onSurface
-                      : theme.hintColor.withOpacity(0.8),
+                      : theme.hintColor,
                 ),
               ),
               trailing: Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 16,
-                color: (isDark ? AppColors.iconDark : AppColors.iconLight)
-                    .withOpacity(0.7),
+                color: theme.hintColor,
               ),
               onTap: () async {
                 final category = await _showCategorySelector();
@@ -254,76 +251,113 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
               },
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+
+          // Date Selection
           GlassCard(
-            padding: const EdgeInsets.all(10),
+            padding: EdgeInsets.zero,
             child: ListTile(
-              leading: Icon(Icons.calendar_today,
-                  color: (isDark ? AppColors.iconDark : AppColors.iconLight)
-                      .withOpacity(0.7)),
-              title: Text(
-                DateFormat('yyyy/MM/dd').format(_selectedDate),
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurface,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              leading: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.calendar_today_rounded,
+                  color: theme.colorScheme.primary,
+                  size: 24,
                 ),
               ),
-              trailing: Icon(Icons.calendar_month,
-                  color: (isDark ? AppColors.iconDark : AppColors.iconLight)
-                      .withOpacity(0.7)),
-              onTap: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: _selectedDate,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime(2030),
-                  builder: (context, child) {
-                    return Theme(
-                      data: theme.copyWith(
-                        colorScheme: theme.colorScheme.copyWith(
-                          primary: AppColors.primaryColor,
-                          onSurface: theme.colorScheme.onSurface,
-                          onPrimary: AppColors.textDark,
-                        ),
-                        textButtonTheme: TextButtonThemeData(
-                          style: TextButton.styleFrom(
-                            foregroundColor: AppColors.primaryColor,
-                          ),
-                        ),
-                      ),
-                      child: child!,
-                    );
-                  },
-                );
-                if (date != null) {
-                  setState(() => _selectedDate = date);
-                }
-              },
+              title: Text(
+                DateFormat('EEEE, d MMMM yyyy', 'ar').format(_selectedDate),
+                style: textTheme.bodyLarge,
+              ),
+              trailing: Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: theme.hintColor,
+              ),
+              onTap: _selectDate,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
+
+          // Notes
           GlassCard(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(16),
             child: TextFormField(
               controller: _notesController,
               maxLines: 3,
-              style: theme.textTheme.bodyLarge?.copyWith(
-                color: theme.colorScheme.onSurface,
-              ),
+              style: textTheme.bodyLarge,
               decoration: InputDecoration(
-                hintText: 'ملاحظات (اختياري)',
-                hintStyle: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.hintColor.withOpacity(0.7),
+                hintText: 'اضف ملاحظة (اختياري)',
+                hintStyle: textTheme.bodyLarge?.copyWith(
+                  color: theme.hintColor,
                 ),
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.all(16),
+                contentPadding: EdgeInsets.zero,
               ),
               onChanged: (value) => _notes = value,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
         ],
       ),
     );
+  }
+
+  // Date selection with theme support
+  Future<void> _selectDate() async {
+    try {
+      final theme = Theme.of(context);
+      final isDark = theme.brightness == Brightness.dark;
+
+      // Use Builder to get a context that has access to MaterialLocalizations
+      return await showDialog<DateTime>(
+        context: context,
+        builder: (BuildContext context) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: ColorScheme.light(
+                primary: theme.colorScheme.primary,
+                onPrimary: Colors.white,
+                onSurface: isDark ? Colors.white : Colors.black87,
+                surface: isDark ? const Color(0xFF121212) : Colors.white,
+              ),
+              dialogBackgroundColor:
+                  isDark ? const Color(0xFF1E1E1E) : Colors.white,
+            ),
+            child: DatePickerDialog(
+              initialDate: _selectedDate,
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2100),
+              initialEntryMode: DatePickerEntryMode.calendar,
+              cancelText: 'إلغاء',
+              confirmText: 'تأكيد',
+              helpText: 'اختر تاريخ المعاملة',
+            ),
+          );
+        },
+      ).then((picked) {
+        if (picked != null && mounted) {
+          setState(() {
+            _selectedDate = picked;
+          });
+        }
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('حدث خطأ: $e'),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -347,19 +381,38 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           color: theme.colorScheme.onSurface,
         ),
         actions: [
-          IconButton(
-            // زر جديد للإدخال الذكي
-            icon:
-                Icon(Icons.lightbulb_outline, color: theme.colorScheme.primary),
-            onPressed: () {
-              Navigator.push(
+          // Smart Input Button - More prominent with text
+          TextButton.icon(
+            icon: Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
+            label: Text(
+              'إدخال ذكي',
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            style: TextButton.styleFrom(
+              backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            onPressed: () async {
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => SmartInputScreen(), // الانتقال للشاشة الجديدة
+                  builder: (_) => const SmartInputScreen(),
                 ),
               );
+
+              // If transactions were saved in the smart input screen, pop this screen
+              if (result == true) {
+                if (mounted) {
+                  Navigator.pop(context);
+                }
+              }
             },
-            tooltip: 'إدخال ذكي / آلي',
           ),
           const SizedBox(width: 8),
         ],
@@ -371,26 +424,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             children: [
               // لم يعد هناك حاجة لـ Method Selector
               // Padding(
-              //   padding:
-              //       const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              //   child: Row(
-              //     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              //     children: [
-              //       Expanded(
-              //           child: _buildMethodChip(
-              //               InputMethod.manual, Icons.edit_note, 'يدوي')),
-              //       const SizedBox(width: 8),
-              //       Expanded(
-              //           child: _buildMethodChip(
-              //               InputMethod.ocr, Icons.camera_alt, 'مسح')),
-              //       const SizedBox(width: 8),
-              //       Expanded(
-              //           child: _buildMethodChip(
-              //               InputMethod.nlp, Icons.chat_bubble, 'نصي')),
-              //     ],
-              //   ),
+              //   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               // ),
-
+              const SizedBox(height: 20),
               Expanded(
                 // المحتوى الرئيسي سيكون دائماً الإدخال اليدوي
                 child: _buildManualInputContent(),

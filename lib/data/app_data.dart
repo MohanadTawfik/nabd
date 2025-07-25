@@ -441,7 +441,7 @@ class AppData with ChangeNotifier {
     _transactions = [
       Transaction(
           id: 't1',
-          category: _categories[3],
+          category: _categories.firstWhere((c) => c.id == 'salary'),
           amount: 400000,
           type: TransactionType.income,
           date: DateTime.now().subtract(const Duration(days: 5))),

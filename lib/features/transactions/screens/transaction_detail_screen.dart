@@ -1,283 +1,480 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:nabd/theme/app_colors.dart';
 import 'package:nabd/widgets/glass_background.dart';
 import 'package:provider/provider.dart';
 import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:nabd/features/transactions/screens/add_transaction_screen.dart';
-import 'package:nabd/theme/app_colors.dart';
 import 'package:nabd/widgets/glass_card.dart';
 
-class TransactionDetailScreen extends StatelessWidget {
+class TransactionDetailScreen extends StatefulWidget {
   final Transaction transaction;
-  const TransactionDetailScreen({
+  TransactionDetailScreen({
     super.key,
     required this.transaction,
   });
 
   @override
+  State<TransactionDetailScreen> createState() =>
+      _TransactionDetailScreenState();
+}
+
+class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
+  late Transaction _transaction;
+
+  // Format amount with Arabic locale
+  late final NumberFormat amountFormat;
+
+  @override
+  void initState() {
+    super.initState();
+    _transaction = widget.transaction;
+    amountFormat = NumberFormat.currency(
+      locale: 'ar',
+      symbol: '',
+      decimalDigits: 2,
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Update the transaction if it was modified elsewhere
+    final appData = Provider.of<AppData>(context, listen: true);
+    final updatedTransaction = appData.transactions.firstWhere(
+      (t) => t.id == _transaction.id,
+      orElse: () => _transaction,
+    );
+
+    if (updatedTransaction != _transaction) {
+      setState(() {
+        _transaction = updatedTransaction;
+      });
+    }
+  }
+
+  Future<void> _vibrate() async {
+    await HapticFeedback.lightImpact();
+  }
+
+  void _onTransactionUpdated(Transaction updatedTransaction) {
+    if (mounted) {
+      setState(() {
+        _transaction = updatedTransaction;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final isExpense = transaction.type == TransactionType.expense;
-    // استخدام AppColors المحددة للدخل والمصروفات
+    final theme = Theme.of(context);
+    final isExpense = _transaction.type == TransactionType.expense;
     final transactionColor =
         isExpense ? AppColors.expenseColor : AppColors.incomeColor;
-    final amountFormat = NumberFormat('#,##0', 'en_US');
-    final dateFormat = DateFormat('EEEE, d MMMM yyyy', 'ar');
-    final timeFormat = DateFormat('hh:mm a', 'ar');
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: Text(
-          'تفاصيل ${transaction.type == TransactionType.expense ? 'المصروف' : 'الدخل'}',
-          style: theme.textTheme.displaySmall?.copyWith(
-            // استخدام displaySmall
-            color: theme.colorScheme.onSurface, // لون يتناسق مع الثيم
+    return PopScope(
+        canPop: false,
+        onPopInvoked: (didPop) {
+          if (!didPop) {
+            Navigator.pop(context, _transaction);
+          }
+        },
+        child: Scaffold(
+          extendBodyBehindAppBar: true,
+          backgroundColor: Colors.transparent,
+          appBar: AppBar(
+            title: Text(
+              'تفاصيل ${_transaction.type == TransactionType.expense ? 'المصروف' : 'الدخل'}',
+              style: theme.textTheme.displaySmall?.copyWith(
+                // استخدام displaySmall
+                color: theme.colorScheme.onSurface, // لون يتناسق مع الثيم
+              ),
+            ),
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            centerTitle: false,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back,
+                  color: theme.colorScheme.onSurface), // لون متناسق
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            actions: [
+              IconButton(
+                icon: Icon(Icons.edit,
+                    color: theme.colorScheme.primary), // لون primary
+                onPressed: () => _showEditConfirmation(context),
+                tooltip: 'تعديل',
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () => _showDeleteConfirmation(context),
+                tooltip: 'حذف',
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: false,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back,
-              color: theme.colorScheme.onSurface), // لون متناسق
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.edit,
-                color: theme.colorScheme.primary), // لون primary
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      AddTransactionScreen(transactionToEdit: transaction),
+          body: GlassBackground(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Spacer for AppBar under GlassBackground.SafeArea
+                SizedBox(
+                  height: AppBar().preferredSize.height *
+                          0.5 + // مثلاً 50% من ارتفاع AppBar
+                      MediaQuery.of(context).padding.top *
+                          0.5, // مثلاً 70% من padding الأعلى
                 ),
-              );
-            },
-            tooltip: 'تعديل',
+
+                // Amount card with hero animation
+                Hero(
+                  tag: 'transaction_${_transaction.id}_amount',
+                  flightShuttleBuilder: (
+                    BuildContext flightContext,
+                    Animation<double> animation,
+                    HeroFlightDirection flightDirection,
+                    BuildContext fromHeroContext,
+                    BuildContext toHeroContext,
+                  ) {
+                    return AnimatedBuilder(
+                      animation: animation,
+                      builder: (context, child) {
+                        return Transform.scale(
+                          scale: Tween<double>(begin: 1.0, end: 1.05)
+                              .evaluate(animation),
+                          child: child,
+                        );
+                      },
+                      child: GlassCard(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 24.0, horizontal: 16.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: transactionColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: transactionColor.withOpacity(0.2),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  isExpense ? 'مصروف' : 'دخل',
+                                  style: theme.textTheme.labelMedium?.copyWith(
+                                    color: transactionColor,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                textBaseline: TextBaseline.alphabetic,
+                                children: [
+                                  Text(
+                                    amountFormat.format(_transaction.amount),
+                                    style:
+                                        theme.textTheme.displayLarge?.copyWith(
+                                      color: theme.colorScheme.onSurface,
+                                      fontWeight: FontWeight.w800,
+                                      height: 0.9,
+                                      letterSpacing: -0.5,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 6.0),
+                                    child: Text(
+                                      '﷼',
+                                      style:
+                                          theme.textTheme.titleLarge?.copyWith(
+                                        color: theme.colorScheme.onSurface
+                                            .withOpacity(0.7),
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                  child: GlassCard(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 24.0, horizontal: 16.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: transactionColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: transactionColor.withOpacity(0.2),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              isExpense ? 'مصروف' : 'دخل',
+                              style: theme.textTheme.labelMedium?.copyWith(
+                                color: transactionColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                amountFormat.format(_transaction.amount),
+                                style: theme.textTheme.displayLarge?.copyWith(
+                                  color: theme.colorScheme.onSurface,
+                                  fontWeight: FontWeight.w800,
+                                  height: 0.9,
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 6.0),
+                                child: Text(
+                                  '﷼',
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    color: theme.colorScheme.onSurface
+                                        .withOpacity(0.7),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Transaction details card
+                Expanded(
+                  // هذا هو المفتاح: Expanded يجعل هذا الجزء يأخذ المساحة المتبقية
+                  child: SingleChildScrollView(
+                    // لضمان التمرير إذا كانت التفاصيل كثيرة
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 8), // Padding لهذا الجزء
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12.0, vertical: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Section header
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                            child: Text(
+                              'تفاصيل المعاملة',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                          ),
+
+                          // Details list
+                          ListView.separated(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            padding: EdgeInsets.zero,
+                            itemCount: 3 +
+                                (_transaction.notes?.isNotEmpty == true
+                                    ? 2
+                                    : 0),
+                            separatorBuilder: (_, __) => const Divider(
+                              height: 1,
+                              thickness: 0.5,
+                              indent: 16,
+                              endIndent: 16,
+                            ),
+                            itemBuilder: (context, index) {
+                              if (index == 0) {
+                                return _buildEnhancedDetailRow(
+                                  context,
+                                  icon: _transaction.category.icon,
+                                  label: 'التصنيف',
+                                  value: _transaction.category.name,
+                                  iconColor: _transaction.category.color,
+                                );
+                              } else if (index == 1) {
+                                return _buildEnhancedDetailRow(
+                                  context,
+                                  icon: Icons.calendar_today_outlined,
+                                  label: 'التاريخ',
+                                  value: DateFormat('EEEE, d MMMM y', 'ar')
+                                      .format(_transaction.date),
+                                );
+                              } else if (index == 2) {
+                                return _buildEnhancedDetailRow(
+                                  context,
+                                  icon: Icons.access_time,
+                                  label: 'الوقت',
+                                  value: DateFormat('h:mm a', 'ar')
+                                      .format(_transaction.date),
+                                );
+                              } else if (index == 3 &&
+                                  _transaction.notes?.isNotEmpty == true) {
+                                return _buildNotesSection(
+                                    context, _transaction.notes!);
+                              }
+                              return const SizedBox.shrink();
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(width: 8),
-          IconButton(
-            icon: Icon(Icons.delete_outline,
-                color: theme.colorScheme.error), // لون error
-            onPressed: () => _showDeleteConfirmation(context),
-            tooltip: 'حذف',
+        ));
+  }
+
+  Widget _buildNotesSection(BuildContext context, String notes) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: theme.iconTheme.color!.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  Icons.notes_outlined,
+                  color: theme.iconTheme.color!,
+                  size: 25,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                'ملاحظات',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.8),
+                  letterSpacing: 0.5,
+                  // استخدام bodyLarge
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(width: 8),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: theme.cardTheme.color,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.shadowColor.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+              border: Border.all(
+                color: theme.dividerColor.withOpacity(0.5),
+                width: 0.5,
+              ),
+            ),
+            child: Text(
+              notes,
+              style: theme.textTheme.bodyLarge?.copyWith(
+                height: 2,
+                color: theme.textTheme.bodyLarge?.color?.withOpacity(0.9),
+              ),
+            ),
+          ),
         ],
       ),
-      body: GlassBackground(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Spacer for AppBar under GlassBackground.SafeArea
-            SizedBox(
-              height: AppBar().preferredSize.height *
-                      0.5 + // مثلاً 50% من ارتفاع AppBar
-                  MediaQuery.of(context).padding.top *
-                      0.5, // مثلاً 70% من padding الأعلى
-            ),
-
-            // Amount card
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 16.0, vertical: 8), // Padding لهذا الجزء
-              child: GlassCard(
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      Text(
-                        isExpense ? 'مصروف' : 'دخل',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                          // استخدام bodyLarge
-                          color: theme.textTheme.bodyMedium?.color
-                              ?.withOpacity(0.7),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        ' ${amountFormat.format(transaction.amount)}',
-                        style: theme.textTheme.displayLarge?.copyWith(
-                          // استخدام displayLarge
-                          color: transactionColor, // لون المعاملة
-                          fontWeight: FontWeight.bold,
-                          // fontSize: 40, (تم إزالة الحجم الثابت والاعتماد على displayLarge)
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '﷼',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.textTheme.bodyMedium?.color
-                              ?.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // const SizedBox(height: 24),
-
-            // Transaction details card
-            Expanded(
-              // هذا هو المفتاح: Expanded يجعل هذا الجزء يأخذ المساحة المتبقية
-              child: SingleChildScrollView(
-                // لضمان التمرير إذا كانت التفاصيل كثيرة
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0, vertical: 8), // Padding لهذا الجزء
-                child: Container(
-                  // وضع تفاصيل المعاملة داخل GlassCard خاصة بها
-                  padding: EdgeInsets.zero, // لتجنب تكرار المسافة الداخلية
-                  child: Column(
-                    // Column التي تحتوي على تفاصيل المعاملة
-                    children: [
-                      _buildDetailRow(
-                        context,
-                        icon: Icons.category,
-                        title: 'الفئة',
-                        value: transaction.category.name,
-                        iconColor: transactionColor,
-                        iconBackground: transactionColor.withOpacity(0.15),
-                      ),
-                      _buildDivider(context),
-                      _buildDetailRow(
-                        context,
-                        icon: Icons.calendar_today,
-                        title: 'التاريخ',
-                        value: dateFormat.format(transaction.date),
-                      ),
-                      _buildDivider(context),
-                      _buildDetailRow(
-                        context,
-                        icon: Icons.access_time,
-                        title: 'الوقت',
-                        value: timeFormat.format(transaction.date),
-                      ),
-                      if (transaction.notes?.isNotEmpty ?? false) ...[
-                        _buildDivider(context),
-                        _buildDetailRow(
-                          context,
-                          icon: Icons.notes,
-                          title: 'ملاحظات',
-                          value: transaction.notes!,
-                          maxLines: 3,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // إذا كان هناك زر حذف في الأسفل، يمكن وضعه هنا خارج الـ Expanded
-            // const SizedBox(height: 16), // مسافة قبل الزر
-            // ElevatedButton.icon(...) // زر الحذف هنا
-          ],
-        ),
-      ),
-    );
-  }
-  // const SizedBox(height: 24),
-
-  // // Delete button
-  // ElevatedButton.icon(
-  //   onPressed: () => _showDeleteConfirmation(context),
-  //   style: ElevatedButton.styleFrom(
-  //     backgroundColor:
-  //         theme.colorScheme.error.withValues(alpha: 0.1),
-  //     foregroundColor: theme.colorScheme.error,
-  //     elevation: 0,
-  //     padding: const EdgeInsets.symmetric(vertical: 16),
-  //     shape: RoundedRectangleBorder(
-  //       borderRadius: BorderRadius.circular(12),
-  //     ),
-  //   ),
-  //   icon: const Icon(Icons.delete_outline),
-  //   label: const Text('حذف المعاملة',
-  //       style: TextStyle(fontWeight: FontWeight.bold)),
-  // ),
-
-  // Widget _buildDivider() {
-  //   return const Divider(height: 1, thickness: 1, indent: 16, endIndent: 16);
-  // }
-
-  Widget _buildDivider(BuildContext context) {
-    // استلام context
-    final theme = Theme.of(context);
-    return Divider(
-      height: 1,
-      thickness: 0.5, // تخفيض سمك الخط
-      indent: 16,
-      endIndent: 16,
-      color: theme.dividerColor, // استخدام لون الـ Divider من الثيم
     );
   }
 
-  Widget _buildDetailRow(
+  Widget _buildEnhancedDetailRow(
     BuildContext context, {
     required IconData icon,
-    required String title,
+    required String label,
     required String value,
     Color? iconColor,
-    Color? iconBackground,
-    int maxLines = 1,
   }) {
     final theme = Theme.of(context);
-    final defaultIconColor = theme.iconTheme.color;
-
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icon
+          // Icon container with background
           Container(
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: iconBackground ??
-                  defaultIconColor?.withOpacity(0.1) ??
-                  Colors.grey.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: (iconColor ?? theme.iconTheme.color!).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: iconColor ?? defaultIconColor, size: 25),
+            child: Icon(
+              icon,
+              color: iconColor ?? theme.iconTheme.color!,
+              size: 25,
+            ),
           ),
-
           const SizedBox(width: 16),
-
-          // Details
+          // Label and value
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  title,
+                  label,
                   style: theme.textTheme.bodyLarge?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.8),
+                    letterSpacing: 0.5,
                     // استخدام bodyLarge
                     fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface
-                        .withOpacity(0.8), // لون أوضح
                   ),
                 ),
-                const SizedBox(height: 3),
+                const SizedBox(height: 4),
                 Text(
                   value,
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                  style: theme.textTheme.bodyLarge?.copyWith(
                     // استخدام bodyMedium
                     fontWeight:
                         FontWeight.normal, // ليكون أقل بروزاً من العنوان
-                    color: theme.colorScheme.onSurface
-                        .withOpacity(0.7), // لون ثانوي
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                    // height: 1.3,
                   ),
-                  maxLines: maxLines,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -287,49 +484,135 @@ class TransactionDetailScreen extends StatelessWidget {
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context) {
-    final transaction = this.transaction;
-    final theme = Theme.of(context); // الحصول على الثيم هنا
-    showDialog(
+  Future<void> _showEditConfirmation(BuildContext context) async {
+    unawaited(_vibrate());
+    final shouldEdit = await showDialog<bool>(
       context: context,
-      builder: (dialogCtx) {
+      builder: (context) {
+        final theme = Theme.of(context);
         return AlertDialog(
-          // ضبط ألوان وحجم الخطوط في AlertDialog
-          backgroundColor: theme.colorScheme.surface, // خلفية من الثيم
-          surfaceTintColor: Colors.transparent, // لمنع التأثيرات الإضافية
-          title: Text('حذف المعاملة',
-              style: theme.textTheme.headlineSmall
-                  ?.copyWith(fontWeight: FontWeight.bold)),
+          backgroundColor: theme.colorScheme.surface,
+          surfaceTintColor: Colors.transparent,
+          title: Text(
+            'تعديل المعاملة',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
           content: Text(
-            'هل أنت متأكد من حذف هذه المعاملة؟ لا يمكن التراجع عن هذا الإجراء.',
+            'هل تريد تعديل هذه المعاملة؟',
             textAlign: TextAlign.right,
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(color: theme.colorScheme.onSurface.withOpacity(0.8)),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.8),
+            ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(dialogCtx).pop(),
-              child: Text('إلغاء',
-                  style: theme.textTheme.labelLarge?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7))),
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                'إلغاء',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
             ),
             TextButton(
-              onPressed: () {
-                Provider.of<AppData>(context, listen: false)
-                    .deleteTransaction(transaction);
-                Navigator.of(dialogCtx).pop();
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(true),
               style: TextButton.styleFrom(
-                foregroundColor: theme.colorScheme.error,
+                foregroundColor: theme.colorScheme.primary,
               ),
-              child: Text('حذف',
-                  style: theme.textTheme.labelLarge
-                      ?.copyWith(fontWeight: FontWeight.bold)),
+              child: Text(
+                'تعديل',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         );
       },
     );
+
+    if (shouldEdit == true && context.mounted) {
+      final updatedTransaction = await Navigator.push<Transaction>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AddTransactionScreen(transactionToEdit: _transaction),
+        ),
+      );
+
+      if (updatedTransaction != null && context.mounted) {
+        _onTransactionUpdated(updatedTransaction);
+      }
+    }
+  }
+
+  Future<void> _showDeleteConfirmation(BuildContext context) async {
+    unawaited(_vibrate());
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          backgroundColor: theme.colorScheme.surface,
+          surfaceTintColor: Colors.transparent,
+          title: Text(
+            'حذف المعاملة',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'هل أنت متأكد من حذف هذه المعاملة؟ لا يمكن التراجع عن هذا الإجراء.',
+            textAlign: TextAlign.right,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.8),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(false),
+              child: Text(
+                'إلغاء',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogCtx).pop(true),
+              style: TextButton.styleFrom(
+                foregroundColor: theme.colorScheme.error,
+              ),
+              child: Text(
+                'حذف',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldDelete == true && context.mounted) {
+      try {
+        Provider.of<AppData>(context, listen: false)
+            .deleteTransaction(_transaction);
+        if (context.mounted) {
+          Navigator.of(context).pop();
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('حدث خطأ أثناء حذف المعاملة: ${e.toString()}'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      }
+    }
   }
 }

@@ -11,7 +11,8 @@ class Transaction {
   final TransactionType type;
   final DateTime date;
   // حقل الملاحظات
-  final String notes;
+  final String? notes;
+  final String? source; // مثلاً: 'OCR', 'NLP', 'Excel'
 
   Transaction({
     required this.id,
@@ -19,6 +20,7 @@ class Transaction {
     required this.amount,
     required this.type,
     required this.date,
-    this.notes = '',
+    this.notes,
+    this.source,
   });
 }

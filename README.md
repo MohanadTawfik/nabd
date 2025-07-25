@@ -1,16 +1,46 @@
 # nabd
 
-A new Flutter project.
+A Flutter application for personal finance management.
 
-## Getting Started
+## Features
 
-This project is a starting point for a Flutter application.
+- Track your income and expenses
+- Set and track financial goals
+- View your financial progress with a simple and intuitive dashboard
+- Get insights into your spending habits with a detailed report
+- Add and manage your transactions with a simple and easy-to-use interface
 
-A few resources to get you started if this is your first Flutter project:
+## Screenshots
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+![screenshot of the app's dashboard](./screenshots/dashboard.png)
+![screenshot of the app's add transaction screen](./screenshots/add-transaction.png)
+![screenshot of the app's report screen](./screenshots/report.png)
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Development
+
+### Requirements
+
+- Flutter 3.0 or later
+- Dart 2.15 or later
+
+### Build and Run
+
+1. Clone the repository
+2. Open the project in your preferred IDE
+3. Run `flutter pub get` to install the dependencies
+4. Run `flutter run` to build and run the app on an emulator or a physical device
+
+## Contributing
+
+Contributions are welcome! If you'd like to contribute to this project, please follow these steps:
+
+1. Fork the repository
+2. Create a new branch for your feature or fix
+3. Write and test your code
+4. Create a pull request to merge your branch into the main branch
+
+Please make sure to follow the code style and conventions used in this project.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
