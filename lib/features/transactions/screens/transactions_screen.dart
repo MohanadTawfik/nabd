@@ -92,8 +92,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (_) => AddTransactionScreen(
-                              initialType: TransactionType.expense,
-                            ),
+                                // initialType: TransactionType.expense,
+                                ),
                           ),
                         );
                       },
@@ -192,11 +192,14 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                     ),
                                     child: Text(
                                       _formatDateHeader(txn.date),
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                        color: Colors.white70,
-                                      ),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium
+                                          ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: Theme.of(context)
+                                                  .colorScheme
+                                                  .onSurface),
                                     ),
                                   ),
                                 Padding(

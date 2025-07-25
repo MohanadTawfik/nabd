@@ -83,7 +83,7 @@ class TransactionDetailScreen extends StatelessWidget {
                       child: Column(
                         children: [
                           Text(
-                            isExpense ? 'المصروف' : 'الدخل',
+                            isExpense ? 'مصروف' : 'دخل',
                             style: theme.textTheme.titleMedium?.copyWith(
                               color: theme.textTheme.bodyMedium?.color
                                   ?.withOpacity(0.7),
@@ -91,7 +91,7 @@ class TransactionDetailScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '${isExpense ? '-' : '+'}${amountFormat.format(transaction.amount)}',
+                            ' ${amountFormat.format(transaction.amount)}',
                             style: theme.textTheme.headlineLarge?.copyWith(
                               color: color,
                               fontWeight: FontWeight.bold,
@@ -100,10 +100,10 @@ class TransactionDetailScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'ريال يمني',
+                            '﷼',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.textTheme.bodyMedium?.color
-                                  ?.withOpacity(0.7),
+                                  ?.withValues(alpha: 0.7),
                             ),
                           ),
                         ],

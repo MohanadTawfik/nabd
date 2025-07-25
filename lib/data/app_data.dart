@@ -180,6 +180,7 @@ class AppData with ChangeNotifier {
   List<Category> get incomeCategories =>
       _categories.where((c) => c.type == TransactionType.income).toList();
 
+  List<Category> get categories => _categories;
   List<Transaction> get transactions {
     // إذا كان الفلتر فعالاً، نعرض القائمة المصفاة، وإلا نعرض القائمة الكاملة
     return _isFilterActive ? _filteredTransactions : _transactions;
