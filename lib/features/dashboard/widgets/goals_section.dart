@@ -22,7 +22,7 @@ class GoalsSection extends StatelessWidget {
       children: [
         Text(
           'سباق الأهداف',
-          style: AppTextStyles.headline2.copyWith(color: AppColors.textLight),
+          style: AppTextStyles.displayMedium.copyWith(color: AppColors.textLight),
         ),
         AppPaddings.mediumHeight,
         SizedBox(

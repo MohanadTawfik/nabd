@@ -51,22 +51,22 @@ class DashboardScreen extends StatelessWidget {
       body: Consumer<AppData>(
         builder: (context, appData, child) {
           return ListView(
-            padding: AppPaddings.allMedium.copyWith(
+            padding: EdgeInsets.all(16.0).copyWith(
               bottom: MediaQuery.of(context).padding.bottom + 16,
             ),
             children: [
               LevelIndicatorWidget(),
-              AppPaddings.largeHeight,
+              SizedBox(height: 24.0),
               AnimatedBalanceCard(balance: appData.currentBalance),
-              AppPaddings.largeHeight,
+              SizedBox(height: 24.0),
               GoalsSection(),
-              AppPaddings.largeHeight,
+              SizedBox(height: 24.0),
               QuickActionsWidget(),
-              AppPaddings.largeHeight,
+              SizedBox(height: 24.0),
               DailyTipsWidget(),
-              AppPaddings.largeHeight,
+              SizedBox(height: 24.0),
               RecentTransactionsWidget(),
-              AppPaddings.largeHeight,
+              SizedBox(height: 24.0),
               BudgetsCard(),
             ],
           );

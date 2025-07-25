@@ -18,7 +18,7 @@ class AnimatedBalanceCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('الرصيد الحالي',
-              style: AppTextStyles.subtitle1.copyWith(
+              style: AppTextStyles.displaySmall.copyWith(
                   color: Theme.of(context).textTheme.bodyLarge?.color)),
           AppPaddings.smallHeight,
           Row(
@@ -27,7 +27,7 @@ class AnimatedBalanceCard extends StatelessWidget {
                 textDirection: TextDirection.ltr,
                 child: AnimatedDigitWidget(
                   value: balance,
-                  textStyle: AppTextStyles.headline1.copyWith(
+                  textStyle: AppTextStyles.displayMedium.copyWith(
                       color: Theme.of(context).textTheme.bodyLarge?.color),
                   duration: const Duration(milliseconds: 800),
                   fractionDigits: 0,
@@ -36,7 +36,7 @@ class AnimatedBalanceCard extends StatelessWidget {
               ),
               AppPaddings.smallWidth,
               Text('ريال',
-                  style: AppTextStyles.bodyText1.copyWith(
+                  style: AppTextStyles.displaySmall.copyWith(
                       color: Theme.of(context).textTheme.bodyLarge?.color)),
             ],
           ),

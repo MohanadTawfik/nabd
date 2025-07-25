@@ -24,7 +24,8 @@ class QuickActionsWidget extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (_) => AddTransactionScreen(initialType: TransactionType.expense)),
+                  builder: (_) => AddTransactionScreen(
+                      initialType: TransactionType.expense)),
             );
           },
         ),
@@ -46,7 +47,8 @@ class QuickActionsWidget extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                  builder: (_) => AddTransactionScreen(initialType: TransactionType.income)),
+                  builder: (_) => AddTransactionScreen(
+                      initialType: TransactionType.income)),
             );
           },
         ),
@@ -93,8 +95,8 @@ class _QuickActionButton extends StatelessWidget {
         ),
         AppPaddings.smallHeight,
         Text(label,
-            style:
-                AppTextStyles.subtitle2.copyWith(color: AppColors.textPrimary)),
+            style: AppTextStyles.displaySmall
+                .copyWith(color: AppColors.textPrimary)),
       ],
     );
   }

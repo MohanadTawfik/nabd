@@ -1,3 +1,4 @@
+// glass_background.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:nabd/theme/app_colors.dart';
@@ -9,59 +10,53 @@ class GlassBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
     return Stack(
       children: [
-        // خلفية الدوائر
+        // الخلفية الأساسية بلون الثيم
         Positioned.fill(
           child: Container(
-            color: Theme.of(context).brightness == Brightness.light
-                ? AppColors.backgroundLight
-                : AppColors.backgroundDark,
-            child: Stack(
-              children: [
-                // الدائرة العلوية اليسرى
-                Positioned(
-                  top: -100,
-                  left: -250,
-                  child: _buildCircle(460, Colors.blue),
-                ),
-                // الدائرة الوسطى اليمنى (لون مختلف)
-                Positioned(
-                  top: 300,
-                  right: -250,
-                  child: _buildCircle(400, Colors.pink),
-                ),
-                // الدائرة السفلية اليسرى
-                Positioned(
-                  bottom: -100,
-                  left: -250,
-                  child: _buildCircle(450, Colors.blue),
-                ),
-              ],
-            ),
+            color:
+                isLight ? AppColors.backgroundLight : AppColors.backgroundDark,
           ),
         ),
-        // خلفية الصورة
-        // Positioned.fill(
-        //   child: Container(
-        //     decoration: BoxDecoration(
-        //       image: DecorationImage(
-        //         image: AssetImage('assets/images/bg.jpg'),
-        //         fit: BoxFit.cover,
-        //       ),
-        //     ),
-        //   ),
-        // ),
-        // طبقة الزجاج
+        // دوائر الإضاءة
+        Positioned(
+          top: -150, // تم تعديل الموضع
+          left: -150, // تم تعديل الموضع
+          child: _buildCircle(
+            400, // تم تصغير الحجم قليلاً
+            isLight
+                ? AppColors.primaryLight.withOpacity(0.5)
+                : AppColors.primaryDark
+                    .withOpacity(0.4), // استخدام ألوان الثيم الأساسية
+          ),
+        ),
+        Positioned(
+          bottom: -100, // تم تعديل الموضع
+          right: -100, // تم تعديل الموضع
+          child: _buildCircle(
+            350, // تم تصغير الحجم قليلاً
+            isLight
+                ? AppColors.accentColor.withOpacity(0.4)
+                : AppColors.accentColor
+                    .withOpacity(0.3), // استخدام لون مميز ولكن أخف
+          ),
+        ),
+        // طبقة الزجاج (التأثير الشفاف)
         Positioned.fill(
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(0),
+            borderRadius:
+                BorderRadius.circular(0), // لا نحتاج إلى حواف مدورة هنا
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
+              filter: ImageFilter.blur(
+                  sigmaX: 25, sigmaY: 25), // تم تخفيض قوة التمويه
               child: Container(
-                color: Theme.of(context).brightness == Brightness.light
-                    ? Colors.white.withValues(alpha: 0.01)
-                    : Colors.black.withValues(alpha: 0.01), // شفافية الزجاج
+                color: isLight
+                    ? Colors.white.withOpacity(0.05) // تم زيادة الشفافية قليلاً
+                    : Colors.black.withOpacity(
+                        0.1), // تم زيادة الشفافية قليلاً في الوضع الداكن
               ),
             ),
           ),
@@ -79,14 +74,7 @@ class GlassBackground extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [
-            color.withValues(alpha: 0.7),
-            color.withValues(alpha: 0.7),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: color, // استخدام اللون مباشرة مع الشفافية المحددة
       ),
     );
   }

@@ -19,7 +19,7 @@ class PlaceholderCard extends StatelessWidget {
         child: Center(
           child: Text(
             title,
-            style: AppTextStyles.bodyText1.copyWith(color: AppColors.textSecondary),
+            style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textSecondary),
           ),
         ),
       ),

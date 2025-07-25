@@ -1,5 +1,4 @@
-import 'dart:ui';
-import 'package:flutter/material.dart';
+// glass_card.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
@@ -8,20 +7,27 @@ class GlassCard extends StatelessWidget {
   final EdgeInsets padding;
   final double borderRadius;
   final double blurStrength;
-  final double opacity;
+  final double opacity; // درجة الشفافية الافتراضية
 
   const GlassCard({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(16.0),
     this.borderRadius = 12.0,
-    this.blurStrength = 25.0,
-    this.opacity = 0.15, // درجة الشفافية الافتراضية
+    this.blurStrength = 10.0, // تم تخفيض قوة التمويه قليلاً
+    this.opacity = 0.2, // تم زيادة الشفافية الافتراضية قليلاً
   });
 
   @override
   Widget build(BuildContext context) {
     final isLight = Theme.of(context).brightness == Brightness.light;
+
+    // تحديد ألوان البطاقة بناءً على الثيم ودرجة الشفافية
+    Color baseColor = isLight ? Colors.white : Colors.black;
+    Color gradientStart =
+        baseColor.withOpacity(opacity + (isLight ? 0.05 : 0.0)); // تدرج خفيف
+    Color gradientEnd =
+        baseColor.withOpacity(opacity + (isLight ? 0.1 : 0.05)); // تدرج خفيف
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
@@ -36,21 +42,29 @@ class GlassCard extends StatelessWidget {
             // لون زجاجي مع Gradient خفيف
             gradient: LinearGradient(
               colors: [
-                (isLight ? Colors.white : Colors.black)
-                    .withValues(alpha: opacity + 0.2),
-                (isLight ? Colors.white : Colors.black)
-                    .withValues(alpha: opacity + 0.2),
+                gradientStart,
+                gradientEnd,
               ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
             // إطار خفيف شفاف
             border: Border.all(
-              color: Theme.of(context).brightness == Brightness.light
-                  ? Colors.white.withValues(alpha: 0.35)
-                  : Colors.white.withValues(alpha: 0.15),
+              color: isLight
+                  ? Colors.white.withOpacity(0.5) // تم تعديل الشفافية
+                  : Colors.white
+                      .withOpacity(0.1), // تم تخفيض الشفافية في الوضع الداكن
               width: 1,
             ),
+            // إضافة ظل خفيف للبطاقة
+            boxShadow: [
+              BoxShadow(
+                color: (isLight ? Colors.black : Colors.black)
+                    .withOpacity(0.1), // لون الظل
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
           ),
           padding: padding,
           child: child,

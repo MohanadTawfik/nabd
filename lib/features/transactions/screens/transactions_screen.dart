@@ -1,3 +1,4 @@
+// transactions_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:nabd/data/app_data.dart';
@@ -7,6 +8,7 @@ import 'package:nabd/features/transactions/screens/transaction_detail_screen.dar
 import 'package:nabd/features/transactions/widgets/transaction_list_item.dart';
 import 'package:nabd/widgets/glass_background.dart';
 import 'package:provider/provider.dart';
+import 'package:nabd/theme/app_colors.dart'; // إضافة استيراد AppColors
 
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
@@ -61,6 +63,9 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Consumer<AppData>(
       builder: (context, appData, child) {
         List<Transaction> transactions = List.from(appData.transactions);
@@ -69,24 +74,24 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
 
         return Scaffold(
           extendBodyBehindAppBar: true,
-          backgroundColor: Colors.transparent,
+          backgroundColor: Colors.transparent, // تم تعيينها شفافة
           body: GlassBackground(
             child: Column(
               children: [
                 AppBar(
-                  backgroundColor: Colors.transparent,
+                  backgroundColor: Colors.transparent, // شفافية تامة
                   elevation: 0,
-                  title: const Text(
+                  title: Text(
                     'سجل المعاملات',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
-                    ),
+                    style:
+                        theme.textTheme.displayMedium, // استخدام displayMedium
                   ),
                   centerTitle: false,
                   actions: [
                     IconButton(
-                      icon: const Icon(Icons.add),
+                      icon: Icon(Icons.add,
+                          color:
+                              theme.colorScheme.onSurface), // استخدام onSurface
                       onPressed: () {
                         Navigator.push(
                           context,
@@ -105,14 +110,27 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                       const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
                   child: TextField(
                     controller: _searchController,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color:
+                          isDark ? AppColors.textDark : AppColors.textPrimary,
+                    ), // لون نص الإدخال
                     decoration: InputDecoration(
                       hintText: 'ابحث عن معاملة...',
-                      prefixIcon: const Icon(Icons.search),
+                      hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                        color: isDark
+                            ? AppColors.subtextDark
+                            : AppColors.textSecondary,
+                      ), // لون نص التلميح
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color:
+                            isDark ? AppColors.iconDark : AppColors.iconLight,
+                      ),
                       filled: true,
-                      fillColor:
-                          Theme.of(context).brightness == Brightness.light
-                              ? Colors.white.withOpacity(0.5)
-                              : Colors.black.withOpacity(0.5),
+                      fillColor: isDark
+                          ? Colors.white
+                              .withOpacity(0.08) // شفافية أقل ودمج أفضل
+                          : Colors.black.withOpacity(0.05), // شفافية أقل
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none,
@@ -153,14 +171,18 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                               Icon(
                                 Icons.receipt_long,
                                 size: 64,
-                                color: Colors.grey[400],
+                                color: isDark
+                                    ? Colors.grey[700]
+                                    : Colors.grey[400],
                               ),
                               const SizedBox(height: 16),
                               Text(
                                 'لا توجد معاملات',
-                                style: TextStyle(
-                                  color: Colors.grey[600],
-                                  fontSize: 18,
+                                style: theme.textTheme.headlineSmall?.copyWith(
+                                  // استخدام headlineSmall
+                                  color: isDark
+                                      ? Colors.grey[500]
+                                      : Colors.grey[600],
                                 ),
                               ),
                             ],
@@ -192,19 +214,18 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                                     ),
                                     child: Text(
                                       _formatDateHeader(txn.date),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleMedium
+                                      style: theme.textTheme.headlineSmall
                                           ?.copyWith(
+                                              // استخدام headlineSmall
                                               fontWeight: FontWeight.bold,
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .onSurface),
+                                              color:
+                                                  theme.colorScheme.onSurface),
                                     ),
                                   ),
                                 Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 1),
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical:
+                                          4), // زيادة المسافة العمودية بين البطاقات
                                   child: InkWell(
                                     onTap: () {
                                       Navigator.push(
@@ -257,10 +278,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       ),
       child: Material(
         color: isSelected
-            ? colorScheme.primary.withOpacity(0.1)
-            : isDark
-                ? Colors.white.withOpacity(0.05)
-                : Colors.black.withOpacity(0.05),
+            ? colorScheme.primary.withOpacity(0.2) // شفافية أعلى للزر المحدد
+            : (isDark
+                ? AppColors.grey800.withOpacity(0.3) // لون رمادي داكن شفاف
+                : AppColors.grey200.withOpacity(0.5)), // لون رمادي فاتح شفاف
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -281,12 +302,15 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
               children: [
                 Text(
                   label,
-                  style: textTheme.titleSmall?.copyWith(
+                  style: textTheme.labelLarge?.copyWith(
+                    // استخدام labelLarge
                     color: isSelected
-                        ? colorScheme.primary
-                        : isDark
-                            ? Colors.white70
-                            : Colors.black87,
+                        ? colorScheme.onPrimary // لون النص على primary
+                        : (isDark
+                            ? AppColors.textDark
+                                .withOpacity(0.7) // لون نص أقل حدة
+                            : AppColors.textPrimary
+                                .withOpacity(0.8)), // لون نص أقل حدة
                     fontWeight:
                         isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
@@ -296,7 +320,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   Icon(
                     _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
                     size: 16,
-                    color: colorScheme.primary,
+                    color: colorScheme.onPrimary, // لون الأيقونة على primary
                   ),
                 ],
               ],

@@ -51,7 +51,7 @@ class GoalItemWidget extends StatelessWidget {
           ),
         ),
         AppPaddings.smallHeight,
-        Text(name, style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
+        Text(name, style: AppTextStyles.displaySmall.copyWith(color: AppColors.textSecondary)),
       ],
     );
   }

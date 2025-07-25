@@ -59,7 +59,7 @@ class _DailyTipsWidgetState extends State<DailyTipsWidget>
           Expanded(
             child: Text(
               'نصيحة اليوم: احفظ 10% من دخلك لتسريع تحقيق أهدافك!',
-              style: AppTextStyles.bodyText1.copyWith(
+              style: AppTextStyles.bodyLarge.copyWith(
                   color: Theme.of(context).textTheme.bodyLarge?.color),
             ),
           ),

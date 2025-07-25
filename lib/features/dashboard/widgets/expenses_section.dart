@@ -54,7 +54,7 @@ const ExpensesSection({super.key});
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('أكبر النفقات هذا الشهر',
-                    style: AppTextStyles.headline2
+                    style: AppTextStyles.displayMedium
                         .copyWith(color: AppColors.textLight)),
                 // 2. إضافة زر "عرض الكل"
                 TextButton(
@@ -66,7 +66,7 @@ const ExpensesSection({super.key});
                     );
                   },
                   child: Text('عرض الكل',
-                      style: AppTextStyles.buttonText
+                      style: AppTextStyles.labelLarge
                           .copyWith(color: AppColors.primaryLight)),
                 ),
               ],
@@ -81,7 +81,7 @@ const ExpensesSection({super.key});
                     padding: AppPaddings.allLarge,
                   child: Center(
                       child: Text('لا توجد مصروفات لعرضها بعد',
-                            style: AppTextStyles.bodyText1
+                            style: AppTextStyles.bodyLarge
                                 .copyWith(color: AppColors.textSecondary)))
                 ),
               )
@@ -140,10 +140,10 @@ const ExpensesSection({super.key});
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Text(
             name,
-            style: AppTextStyles.subtitle2.copyWith(color: AppColors.textLight),
+            style: AppTextStyles.displaySmall.copyWith(color: AppColors.textLight),
           ),
           Text('${format.format(amount)} ريال',
-            style: AppTextStyles.subtitle2.copyWith(color: AppColors.textLight),
+            style: AppTextStyles.displaySmall.copyWith(color: AppColors.textLight),
           ),
         ]),
         AppPaddings.smallHeight,

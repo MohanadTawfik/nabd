@@ -107,7 +107,7 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
                         color: Colors.green.withOpacity(0.5), size: 24),
 
                   Text('رصيدك الحالي',
-                      style: AppTextStyles.bodyText2
+                      style: AppTextStyles.displaySmall
                           .copyWith(color: AppColors.textLight)),
                   AppPaddings.smallHeight,
 
@@ -116,7 +116,7 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
                     textDirection: ui.TextDirection.ltr,
                     child: AnimatedDigitWidget(
                       value: balance,
-                      textStyle: AppTextStyles.headline1
+                      textStyle: AppTextStyles.displayMedium
                           .copyWith(color: AppColors.textLight),
                       fractionDigits: 0,
                       duration: const Duration(milliseconds: 500),
@@ -124,7 +124,7 @@ class _FinancialPulseWidgetState extends State<FinancialPulseWidget>
                     ),
                   ),
                   Text('ريال يمني',
-                      style: AppTextStyles.bodyText2
+                      style: AppTextStyles.bodyLarge
                           .copyWith(color: AppColors.textLight)),
                 ],
               ),
