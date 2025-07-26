@@ -124,13 +124,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     Navigator.pop(context);
   }
 
-  // تم إزالة _processNLP و _startOCRScan
-  // لأنهما سينتقلان إلى شاشة الإدخال الذكي
-
-  // تم إزالة _buildMethodChip
-  // تم إزالة _buildTypeToggle
-  // تم إزالة _buildTypeToggleButton
-
   Future<Category?> _showCategorySelector() async {
     final allCategories =
         Provider.of<AppData>(context, listen: false).categories;

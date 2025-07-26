@@ -28,9 +28,9 @@ class GlassBackground extends StatelessWidget {
           child: _buildCircle(
             400, // تم تصغير الحجم قليلاً
             isLight
-                ? AppColors.primaryLight.withOpacity(0.5)
+                ? AppColors.primaryLight.withOpacity(0.3)
                 : AppColors.primaryDark
-                    .withOpacity(0.4), // استخدام ألوان الثيم الأساسية
+                    .withOpacity(0.3), // استخدام ألوان الثيم الأساسية
           ),
         ),
         Positioned(
@@ -39,9 +39,9 @@ class GlassBackground extends StatelessWidget {
           child: _buildCircle(
             350, // تم تصغير الحجم قليلاً
             isLight
-                ? AppColors.accentColor.withOpacity(0.4)
+                ? AppColors.accentColor.withOpacity(0.3)
                 : AppColors.accentColor
-                    .withOpacity(0.3), // استخدام لون مميز ولكن أخف
+                    .withOpacity(0.2), // استخدام لون مميز ولكن أخف
           ),
         ),
         // طبقة الزجاج (التأثير الشفاف)
@@ -50,8 +50,7 @@ class GlassBackground extends StatelessWidget {
             borderRadius:
                 BorderRadius.circular(0), // لا نحتاج إلى حواف مدورة هنا
             child: BackdropFilter(
-              filter: ImageFilter.blur(
-                  sigmaX: 25, sigmaY: 25), // تم تخفيض قوة التمويه
+              filter: ImageFilter.blur(sigmaX: 50, sigmaY: 50),
               child: Container(
                 color: isLight
                     ? Colors.white.withOpacity(0.05) // تم زيادة الشفافية قليلاً

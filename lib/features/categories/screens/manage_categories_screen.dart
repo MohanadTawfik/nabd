@@ -5,6 +5,7 @@ import 'package:nabd/features/categories/screens/add_edit_category_screen.dart';
 import 'package:nabd/data/app_data.dart';
 import 'package:nabd/widgets/glass_card.dart';
 import 'package:nabd/widgets/glass_background.dart';
+import 'package:nabd/theme/app_colors.dart';
 
 // The main screen widget, redesigned to match the image
 class ManageCategoriesScreen extends StatefulWidget {
@@ -17,10 +18,28 @@ class ManageCategoriesScreen extends StatefulWidget {
 class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
   // int _selectedIndex = 1; // Default to 'Category' tab
   bool _isExpenseSelected = true; // Default to 'Incomes'
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<Category> _filterCategories(List<Category> categories) {
+    if (_searchQuery.isEmpty) return categories;
+
+    final query = _searchQuery.toLowerCase();
+    return categories.where((category) {
+      return category.name.toLowerCase().contains(query);
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -50,9 +69,50 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
               ],
             ),
 
+            // Search Bar
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+              child: TextField(
+                controller: _searchController,
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: isDark ? AppColors.textDark : AppColors.textPrimary,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'ابحث عن فئة...',
+                  hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                    color: isDark
+                        ? AppColors.subtextDark
+                        : AppColors.textSecondary,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: isDark ? AppColors.iconDark : AppColors.iconLight,
+                  ),
+                  filled: true,
+                  fillColor: isDark
+                      ? Colors.white.withOpacity(0.08)
+                      : Colors.black.withOpacity(0.05),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    vertical: 0,
+                    horizontal: 16,
+                  ),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              ),
+            ),
+
             // Type Toggle
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: GlassCard(
                 padding: const EdgeInsets.all(4),
                 child: Row(
@@ -78,9 +138,11 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
             Expanded(
               child: Consumer<AppData>(
                 builder: (context, appData, child) {
-                  final categories = _isExpenseSelected
-                      ? appData.expenseCategories
-                      : appData.incomeCategories;
+                  List<Category> categories = _isExpenseSelected
+                      ? List.from(appData.expenseCategories)
+                      : List.from(appData.incomeCategories);
+
+                  categories = _filterCategories(categories);
 
                   if (categories.isEmpty) {
                     return _buildEmptyState(context);

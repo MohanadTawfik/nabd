@@ -52,7 +52,7 @@ class AnimatedBottomNavBar extends StatelessWidget {
                   _buildNavItem(
                       1, Icons.bar_chart_outlined, 'التقارير', context),
                   const SizedBox(width: 64), // Space for FAB
-                  _buildNavItem(2, Icons.wallet_outlined, 'المحفظة', context),
+                  _buildNavItem(2, Icons.wallet_outlined, 'المحفظات', context),
                   _buildNavItem(
                       3, Icons.settings_outlined, 'الإعدادات', context),
                 ],

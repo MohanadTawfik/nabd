@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nabd/features/categories/models/category_model.dart';
 import 'package:nabd/theme/app_paddings.dart';
 import 'package:nabd/theme/app_text_styles.dart';
 import 'package:nabd/theme/app_colors.dart';
@@ -49,7 +50,8 @@ class BudgetsCard extends StatelessWidget {
             AppPaddings.smallHeight,
             Card(
               elevation: 4,
-              shadowColor: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+              shadowColor:
+                  Theme.of(context).colorScheme.shadow.withOpacity(0.1),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16)),
               color: Theme.of(context).colorScheme.surface,
@@ -63,10 +65,11 @@ class BudgetsCard extends StatelessWidget {
                         : 0.0;
                     return _buildBudgetIndicator(
                       context: context,
-                      name: budget.categoryName,
+                      name: budget.category.name,
                       progress: progress,
                       spent: budget.spentAmount,
                       total: budget.totalAmount,
+                      category: budget.category,
                     );
                   }).toList(),
                 ),
@@ -84,6 +87,7 @@ class BudgetsCard extends StatelessWidget {
     required double progress,
     required double spent,
     required double total,
+    required Category category,
   }) {
     final color = progress < 0.5
         ? Colors.green
@@ -107,8 +111,10 @@ class BudgetsCard extends StatelessWidget {
           AppPaddings.smallHeight,
           LinearProgressIndicator(
             value: progress,
-            backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-            valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).colorScheme.primary),
+            backgroundColor:
+                Theme.of(context).colorScheme.primary.withOpacity(0.2),
+            valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).colorScheme.primary),
             minHeight: 10,
             borderRadius: BorderRadius.circular(5),
           ),
