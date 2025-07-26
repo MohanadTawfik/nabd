@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/categories/screens/manage_categories_screen.dart';
-import 'package:provider/provider.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/settings_item.dart';
@@ -11,100 +11,169 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. نستخدم Provider.of للوصول إلى AppData
+    final theme = Theme.of(context);
     final appData = Provider.of<AppData>(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('الإعدادات'),
+        title: const Text('الإعدادات',
+            style: TextStyle(fontWeight: FontWeight.w600)),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: theme.colorScheme.onSurface,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            const ProfileHeader(
-              name: 'مهند',
-              email: 'mohanad@nabd.app',
-            ),
-            const SizedBox(height: 24),
-            SettingsSection(
-              title: 'الحساب',
-              items: [
-                SettingsItem(
-                  icon: Icons.person_outline,
-                  title: 'المعلومات الشخصية',
-                  onTap: () {},
-                ),
-                SettingsItem(
-                  icon: Icons.lock_outline,
-                  title: 'تغيير كلمة المرور',
-                  onTap: () {},
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SettingsSection(
-              title: 'الإعدادات المالية',
-              items: [
-                SettingsItem(
-                  icon: Icons.account_balance_wallet_outlined,
-                  title: 'إدارة المحافظ',
-                  onTap: () {},
-                ),
-                SettingsItem(
-                  icon: Icons.category_outlined,
-                  title: 'إدارة الفئات',
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          // builder: (context) => const FinanceScreen()),
-                          builder: (context) => const ManageCategoriesScreen()),
-                    );
-                  },
-                ),
-                SettingsItem(
-                  icon: Icons.currency_exchange,
-                  title: 'العملة الأساسية',
-                  trailing: const Text('ريال يمني',
-                      style: TextStyle(color: Colors.white70)),
-                  onTap: () {},
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SettingsSection(
-              title: 'التطبيق',
-              items: [
-                SettingsItem(
-                  icon: Icons.notifications_outlined,
-                  title: 'الإشعارات',
-                  onTap: () {},
-                ),
-                // 2. تحديث عنصر المظهر ليكون تفاعلياً
-                SettingsItem(
-                  icon: Icons.color_lens_outlined,
-                  title: 'المظهر الداكن',
-                  // 3. إضافة Switch للتحكم في المظهر
-                  trailing: Switch(
-                    value: appData.themeMode == ThemeMode.dark,
-                    onChanged: (value) {
-                      // 4. استدعاء الدالة لتغيير المظهر عند الضغط
-                      appData.changeTheme(
-                          value ? ThemeMode.dark : ThemeMode.light);
-                    },
-                    activeColor: const Color(0xff8952ff),
+      extendBodyBehindAppBar: true,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 8),
+              const ProfileHeader(
+                name: 'مصروفي',
+                email: 'masrofi@masrofi.app',
+              ),
+              const SizedBox(height: 8),
+
+              // Account Section
+              SettingsSection(
+                title: 'الحساب',
+                items: [
+                  SettingsItem(
+                    icon: Icons.person_outline_rounded,
+                    title: 'الملف الشخصي',
+                    subtitle: 'تعديل بياناتك الشخصية',
+                    onTap: () {},
                   ),
-                  onTap: () {}, // لا نحتاج للضغط على الصف نفسه
+                  SettingsItem(
+                    icon: Icons.lock_outline_rounded,
+                    title: 'كلمة المرور',
+                    subtitle: 'تغيير كلمة المرور',
+                    onTap: () {},
+                  ),
+                ],
+              ),
+
+              // Financial Settings Section
+              SettingsSection(
+                title: 'الإعدادات المالية',
+                items: [
+                  SettingsItem(
+                    icon: Icons.account_balance_wallet_outlined,
+                    title: 'المحافظ',
+                    subtitle: 'إدارة حساباتك البنكية',
+                    onTap: () {},
+                  ),
+                  SettingsItem(
+                    icon: Icons.category_outlined,
+                    title: 'الفئات',
+                    subtitle: 'تخصيص فئات المصروفات والدخل',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ManageCategoriesScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  SettingsItem(
+                    icon: Icons.currency_exchange_rounded,
+                    title: 'العملة الافتراضية',
+                    subtitle: 'ريال يمني',
+                    onTap: () {},
+                  ),
+                ],
+              ),
+
+              // App Settings Section
+              SettingsSection(
+                title: 'إعدادات التطبيق',
+                items: [
+                  SettingsItem(
+                    icon: Icons.notifications_outlined,
+                    title: 'الإشعارات',
+                    subtitle: 'إدارة إشعارات التطبيق',
+                    onTap: () {},
+                  ),
+                  SettingsItem(
+                    icon: Icons.color_lens_outlined,
+                    title: 'المظهر',
+                    subtitle: isDark ? 'داكن' : 'فاتح',
+                    trailing: Switch(
+                      value: isDark,
+                      onChanged: (value) {
+                        appData.changeTheme(
+                          value ? ThemeMode.dark : ThemeMode.light,
+                        );
+                      },
+                      activeColor: theme.colorScheme.primary,
+                      activeTrackColor:
+                          theme.colorScheme.primary.withOpacity(0.5),
+                    ),
+                    onTap: () {
+                      appData.changeTheme(
+                        isDark ? ThemeMode.light : ThemeMode.dark,
+                      );
+                    },
+                  ),
+                  SettingsItem(
+                    icon: Icons.language_rounded,
+                    title: 'اللغة',
+                    subtitle: 'العربية',
+                    onTap: () {},
+                  ),
+                  SettingsItem(
+                    icon: Icons.security_outlined,
+                    title: 'الأمان والخصوصية',
+                    onTap: () {},
+                  ),
+                  SettingsItem(
+                    icon: Icons.help_outline_rounded,
+                    title: 'المساعدة والدعم',
+                    onTap: () {},
+                  ),
+                  SettingsItem(
+                    icon: Icons.info_outline_rounded,
+                    title: 'حول التطبيق',
+                    onTap: () {},
+                  ),
+                ],
+              ),
+
+              // Sign Out Button
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8.0, vertical: 16.0),
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    // Handle sign out
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red,
+                    side: const BorderSide(color: Colors.red, width: 1.5),
+                    padding: const EdgeInsets.symmetric(vertical: 16.0),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                  ),
+                  icon: const Icon(Icons.logout_rounded, size: 20),
+                  label: const Text(
+                    'تسجيل الخروج',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
-                SettingsItem(
-                  icon: Icons.security_outlined,
-                  title: 'الأمان والخصوصية',
-                  onTap: () {},
-                ),
-              ],
-            ),
-          ],
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
         ),
       ),
     );

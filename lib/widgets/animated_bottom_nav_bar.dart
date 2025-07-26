@@ -32,7 +32,7 @@ class AnimatedBottomNavBar extends StatelessWidget {
             filter: ImageFilter.blur(
                 sigmaX: 20.0, sigmaY: 20.0), // تمويه أعلى لعمق أفضل
             child: Container(
-              height: 80,
+              height: 100,
               decoration: BoxDecoration(
                 color: barGlassBaseColor.withOpacity(barGlassOpacity),
                 border: Border(
@@ -93,6 +93,7 @@ class AnimatedBottomNavBar extends StatelessWidget {
                   width: 1.5,
                 ),
               ),
+
               child: Stack(
                 alignment: Alignment.center,
                 children: [

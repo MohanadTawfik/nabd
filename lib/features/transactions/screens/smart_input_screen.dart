@@ -367,7 +367,8 @@ class _SmartInputScreenState extends State<SmartInputScreen>
         elevation: 0,
         title: Text(
           'إدخال ذكي / آلي',
-          style: theme.textTheme.displaySmall?.copyWith(
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface,
           ),
         ),

@@ -3,7 +3,6 @@ import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/main_screen/main_screen.dart';
 import 'package:nabd/theme/app_themes.dart';
 import 'package:provider/provider.dart';
-import 'features/onboarding/screens/onboarding_screen.dart'; // 1. استيراد شاشة البداية
 
 class FinancialApp extends StatelessWidget {
   const FinancialApp({super.key});

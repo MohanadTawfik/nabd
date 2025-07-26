@@ -43,17 +43,23 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Update the transaction if it was modified elsewhere
+    // Listen to AppData changes and update the transaction if it was modified
     final appData = Provider.of<AppData>(context, listen: true);
+
+    // Find the updated transaction in the list
     final updatedTransaction = appData.transactions.firstWhere(
       (t) => t.id == _transaction.id,
       orElse: () => _transaction,
     );
 
-    if (updatedTransaction != _transaction) {
-      setState(() {
-        _transaction = updatedTransaction;
-      });
+    // Only update if the transaction has actually changed
+    if (updatedTransaction.id == _transaction.id &&
+        updatedTransaction != _transaction) {
+      if (mounted) {
+        setState(() {
+          _transaction = updatedTransaction;
+        });
+      }
     }
   }
 
@@ -62,11 +68,35 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   }
 
   void _onTransactionUpdated(Transaction updatedTransaction) {
-    if (mounted) {
-      setState(() {
-        _transaction = updatedTransaction;
-      });
-    }
+    if (!mounted) return;
+
+    // Update the local transaction and trigger a rebuild
+    setState(() {
+      _transaction = updatedTransaction;
+    });
+
+    // Force a refresh of the AppData to ensure consistency
+    // The AppData will automatically notify its listeners when updated
+
+    // Show a success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'تم تحديث المعاملة بنجاح',
+          textAlign: TextAlign.end,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
+        ),
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+    );
   }
 
   @override
@@ -78,7 +108,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
 
     return PopScope(
         canPop: false,
-        onPopInvoked: (didPop) {
+        onPopInvokedWithResult: (didPop, result) {
           if (!didPop) {
             Navigator.pop(context, _transaction);
           }
@@ -89,9 +119,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           appBar: AppBar(
             title: Text(
               'تفاصيل ${_transaction.type == TransactionType.expense ? 'المصروف' : 'الدخل'}',
-              style: theme.textTheme.displaySmall?.copyWith(
-                // استخدام displaySmall
-                color: theme.colorScheme.onSurface, // لون يتناسق مع الثيم
+              style: theme.textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             backgroundColor: Colors.transparent,
@@ -104,8 +134,9 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
             ),
             actions: [
               IconButton(
-                icon: Icon(Icons.edit,
-                    color: theme.colorScheme.primary), // لون primary
+                icon: Icon(
+                  Icons.edit,
+                ),
                 onPressed: () => _showEditConfirmation(context),
                 tooltip: 'تعديل',
               ),
@@ -156,22 +187,38 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
+                              // Container(
+                              //   padding: const EdgeInsets.symmetric(
+                              //       horizontal: 12, vertical: 4),
+                              //   decoration: BoxDecoration(
+                              //     color: transactionColor.withOpacity(0.1),
+                              //     borderRadius: BorderRadius.circular(12),
+                              //     border: Border.all(
+                              //       color: transactionColor.withOpacity(0.2),
+                              //       width: 1,
+                              //     ),
+                              //   ),
+                              //   child: Text(
+                              //     isExpense ? 'مصروف' : 'دخل',
+                              //     style: theme.textTheme.labelMedium?.copyWith(
+                              //       color: transactionColor,
+                              //       fontWeight: FontWeight.bold,
+                              //     ),
+                              //   ),
+                              // ),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 4),
+                                    horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: transactionColor.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: transactionColor.withOpacity(0.2),
-                                    width: 1,
-                                  ),
                                 ),
                                 child: Text(
                                   isExpense ? 'مصروف' : 'دخل',
-                                  style: theme.textTheme.labelMedium?.copyWith(
+                                  style:
+                                      theme.textTheme.headlineSmall?.copyWith(
                                     color: transactionColor,
-                                    fontWeight: FontWeight.bold,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ),
@@ -436,18 +483,21 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Icon container with background
           Container(
-            width: 50,
-            height: 50,
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: (iconColor ?? theme.iconTheme.color!).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
+              shape: BoxShape.rectangle,
+              border: Border.all(
+                color: (iconColor ?? theme.iconTheme.color!).withOpacity(0.3),
+                width: 1.5,
+              ),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               icon,
               color: iconColor ?? theme.iconTheme.color!,
-              size: 25,
+              size: 22,
             ),
           ),
           const SizedBox(width: 16),

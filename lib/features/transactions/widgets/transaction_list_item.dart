@@ -52,18 +52,36 @@ class TransactionListItem extends StatelessWidget {
         child: Row(
           children: [
             // أيقونة الفئة
+            // Container(
+            //   width: 45,
+            //   height: 45,
+            //   decoration: BoxDecoration(
+            //     color: transaction.category.color
+            //         .withOpacity(0.15), // شفافية خفيفة للون الخلفية
+            //     borderRadius: BorderRadius.circular(8),
+            //   ),
+            //   child: Icon(
+            //     transaction.category.icon,
+            //     color: transaction.category.color, // لون الأيقونة
+            //     size: 25,
+            //   ),
+            // ),
+
             Container(
-              width: 45,
-              height: 45,
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: transaction.category.color
-                    .withOpacity(0.15), // شفافية خفيفة للون الخلفية
-                borderRadius: BorderRadius.circular(8),
+                color: transaction.category.color.withOpacity(0.1),
+                shape: BoxShape.rectangle,
+                border: Border.all(
+                  color: transaction.category.color.withOpacity(0.3),
+                  width: 1.5,
+                ),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 transaction.category.icon,
-                color: transaction.category.color, // لون الأيقونة
-                size: 25,
+                color: transaction.category.color,
+                size: 22,
               ),
             ),
             const SizedBox(width: 12),
@@ -98,12 +116,19 @@ class TransactionListItem extends StatelessWidget {
             ),
 
             // المبلغ
-            Text(
-              "${isExpense ? '-' : '+'}${format.format(transaction.amount)} ﷼",
-              style: theme.textTheme.headlineSmall?.copyWith(
-                // استخدام headlineSmall
-                fontWeight: FontWeight.bold,
-                color: itemColor, // لون المبلغ (أحمر/أخضر)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: itemColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: // المبلغ
+                  Text(
+                "${isExpense ? '-' : '+'}${format.format(transaction.amount)} ﷼",
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  color: itemColor,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],

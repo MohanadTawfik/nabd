@@ -83,8 +83,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   elevation: 0,
                   title: Text(
                     'سجل المعاملات',
-                    style:
-                        theme.textTheme.displayMedium, // استخدام displayMedium
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.onSurface,
+                    ),
                   ),
                   centerTitle: false,
                   actions: [

@@ -1,12 +1,9 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:nabd/features/transactions/screens/add_transaction_screen.dart';
-import 'package:nabd/theme/app_colors.dart';
 import 'package:nabd/features/dashboard/screens/dashboard_screen.dart';
 import 'package:nabd/features/goals/screens/goals_screen.dart';
 import 'package:nabd/features/insights_hub/screens/insights_hub_screen.dart';
 import 'package:nabd/features/settings/screens/settings_screen.dart';
-import 'package:nabd/widgets/magic_fab.dart';
 import 'package:nabd/widgets/animated_bottom_nav_bar.dart';
 import 'package:nabd/widgets/glass_background.dart';
 
@@ -25,12 +22,6 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     GoalsScreen(),
     SettingsScreen(),
   ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,22 +45,11 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             showModalBottomSheet(
               context: context,
               isScrollControlled: true,
+              useSafeArea: true,
               backgroundColor: Colors.transparent,
               builder: (context) => AddTransactionScreen(),
             );
           },
         ));
-  }
-
-  Widget _buildNavItem(IconData icon, int index) {
-    return IconButton(
-      icon: Icon(
-        icon,
-        color: _selectedIndex == index
-            ? Theme.of(context).colorScheme.primary
-            : Theme.of(context).iconTheme.color,
-      ),
-      onPressed: () => _onItemTapped(index),
-    );
   }
 }

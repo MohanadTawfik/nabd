@@ -1,5 +1,5 @@
 // add_transaction_screen.dart (Updated)
-import 'dart:ui';
+// Import for TextDirection and other UI-related classes
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:nabd/data/app_data.dart';
@@ -160,153 +160,230 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
     final textTheme = theme.textTheme;
 
     return Form(
-      key: _formKey,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        children: [
-          // Amount Input
-          GlassCard(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: TextFormField(
-              controller: _amountController,
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-              ],
-              style: textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          children: [
+            // Amount Input
+            GlassCard(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // Yemeni Riyal symbol
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8, right: 12),
+                    child: Text(
+                      '﷼',
+                      style: textTheme.headlineSmall?.copyWith(
+                        color: _amount != null && _amount! > 0
+                            ? theme.colorScheme.primary
+                            : theme.hintColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  // Amount input field
+                  Expanded(
+                    child: TextFormField(
+                      controller: _amountController,
+                      keyboardType:
+                          TextInputType.numberWithOptions(decimal: true),
+                      // Text direction will be handled by the Row's crossAxisAlignment
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(
+                            RegExp(r'^\d*\,?\d{0,2}')),
+                        TextInputFormatter.withFunction((oldValue, newValue) {
+                          // Replace comma with dot for decimal
+                          String newText = newValue.text.replaceAll(',', '.');
+                          // Remove multiple decimal points
+                          if ((newText.split('.').length) > 2) {
+                            return oldValue;
+                          }
+                          return newValue.copyWith(
+                            text: newText,
+                            selection:
+                                TextSelection.collapsed(offset: newText.length),
+                          );
+                        }),
+                      ],
+                      style: textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                        letterSpacing: 0.5,
+                      ),
+                      textAlign: TextAlign.end,
+                      decoration: InputDecoration(
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 18,
+                        ),
+                        border: InputBorder.none,
+                        errorStyle: textTheme.bodySmall?.copyWith(
+                          color: AppColors.errorColor,
+                          height: 1.2,
+                        ),
+                        errorMaxLines: 2,
+                        hintStyle: textTheme.headlineMedium?.copyWith(
+                          color: theme.hintColor.withOpacity(0.5),
+                          fontWeight: FontWeight.bold,
+                        ),
+                        hintText: '0',
+                      ),
+
+                      onChanged: (value) {
+                        // Parse the input value, replacing any comma with dot
+                        final numericValue = double.tryParse(
+                          value.trim().isEmpty
+                              ? '0'
+                              : value.replaceAll(',', '.'),
+                        );
+                        setState(() {
+                          _amount = numericValue ?? 0.0;
+                        });
+                      },
+                    ),
+                  ),
+                ],
               ),
-              textAlign: TextAlign.center,
-              decoration: InputDecoration(
-                hintText: '0.00',
-                hintStyle: textTheme.bodyLarge?.copyWith(
-                  color: theme.hintColor.withOpacity(0.7),
+            ),
+
+            const SizedBox(height: 12),
+
+            // Category Selection
+            GlassCard(
+              padding: EdgeInsets.zero,
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
                 ),
-                border: InputBorder.none,
-                suffixText: '﷼',
-                suffixStyle: textTheme.bodyLarge?.copyWith(
+                // leading: Container(
+                //   padding: const EdgeInsets.all(10),
+                //   decoration: BoxDecoration(
+                //     color: _selectedCategory?.color.withOpacity(0.1) ??
+                //         theme.colorScheme.primary.withOpacity(0.1),
+                //     shape: BoxShape.circle,
+                //   ),
+                //   child: Icon(
+                //     _selectedCategory?.icon ?? Icons.category_outlined,
+                //     color:
+                //         _selectedCategory?.color ?? theme.colorScheme.primary,
+                //     size: 24,
+                //   ),
+                // ),
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: _selectedCategory?.color.withOpacity(0.1) ??
+                        theme.colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    _selectedCategory?.icon ?? Icons.category_outlined,
+                    size: 20,
+                    color:
+                        _selectedCategory?.color ?? theme.colorScheme.primary,
+                  ),
+                ),
+                title: Text(
+                  _selectedCategory?.name ?? 'اختر الفئة',
+                  style: textTheme.bodyLarge?.copyWith(
+                    color: _selectedCategory != null
+                        ? theme.colorScheme.onSurface
+                        : theme.hintColor,
+                  ),
+                ),
+                trailing: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 16,
                   color: theme.hintColor,
                 ),
-                errorStyle: textTheme.bodySmall?.copyWith(
-                  color: AppColors.errorColor,
-                ),
+                onTap: () async {
+                  final category = await _showCategorySelector();
+                  if (category != null) {
+                    setState(() => _selectedCategory = category);
+                  }
+                },
               ),
-              onChanged: (value) {
-                setState(() {
-                  _amount = double.tryParse(value) ?? 0.0;
-                });
-              },
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'الرجاء إدخال المبلغ';
-                }
-                if (double.tryParse(value) == null ||
-                    double.tryParse(value)! <= 0) {
-                  return 'قيمة غير صالحة';
-                }
-                return null;
-              },
             ),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-          // Category Selection
-          GlassCard(
-            padding: EdgeInsets.zero,
-            child: ListTile(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: _selectedCategory?.color.withOpacity(0.1) ??
-                      theme.colorScheme.primary.withOpacity(0.1),
-                  shape: BoxShape.circle,
+            // Date Selection
+            GlassCard(
+              padding: EdgeInsets.zero,
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
                 ),
-                child: Icon(
-                  _selectedCategory?.icon ?? Icons.category_outlined,
-                  color: _selectedCategory?.color ?? theme.colorScheme.primary,
-                  size: 24,
+                // leading: Container(
+                //   padding: const EdgeInsets.all(10),
+                //   decoration: BoxDecoration(
+                //     color: theme.colorScheme.primary.withOpacity(0.1),
+                //     shape: BoxShape.circle,
+                //   ),
+                //   child: Icon(
+                //     Icons.calendar_today_rounded,
+                //     color: theme.colorScheme.primary,
+                //     size: 24,
+                //   ),
+                // ),
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.1)
+                        : theme.primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.calendar_today_rounded,
+                    size: 20,
+                    color: isDark ? theme.iconTheme.color : theme.primaryColor,
+                  ),
                 ),
-              ),
-              title: Text(
-                _selectedCategory?.name ?? 'اختر الفئة',
-                style: textTheme.bodyLarge?.copyWith(
-                  color: _selectedCategory != null
-                      ? theme.colorScheme.onSurface
-                      : theme.hintColor,
+                title: Text(
+                  DateFormat('EEEE, d MMMM yyyy', 'ar').format(_selectedDate),
+                  style: textTheme.bodyLarge,
                 ),
+                trailing: Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 16,
+                  color: theme.hintColor,
+                ),
+                onTap: _selectDate,
               ),
-              trailing: Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: theme.hintColor,
-              ),
-              onTap: () async {
-                final category = await _showCategorySelector();
-                if (category != null) {
-                  setState(() => _selectedCategory = category);
-                }
-              },
             ),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-          // Date Selection
-          GlassCard(
-            padding: EdgeInsets.zero,
-            child: ListTile(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              leading: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.calendar_today_rounded,
-                  color: theme.colorScheme.primary,
-                  size: 24,
-                ),
-              ),
-              title: Text(
-                DateFormat('EEEE, d MMMM yyyy', 'ar').format(_selectedDate),
+            // Notes
+            GlassCard(
+              // padding: const EdgeInsets.all(16),
+              child: TextFormField(
+                controller: _notesController,
+                maxLines: 3,
                 style: textTheme.bodyLarge,
-              ),
-              trailing: Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: theme.hintColor,
-              ),
-              onTap: _selectDate,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          // Notes
-          GlassCard(
-            padding: const EdgeInsets.all(16),
-            child: TextFormField(
-              controller: _notesController,
-              maxLines: 3,
-              style: textTheme.bodyLarge,
-              decoration: InputDecoration(
-                hintText: 'اضف ملاحظة (اختياري)',
-                hintStyle: textTheme.bodyLarge?.copyWith(
-                  color: theme.hintColor,
+                decoration: InputDecoration(
+                  hintText: 'اضف ملاحظة (اختياري)',
+                  hintStyle: textTheme.bodyLarge?.copyWith(
+                    color: theme.hintColor,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                 ),
-                border: InputBorder.none,
-                contentPadding: EdgeInsets.zero,
+                onChanged: (value) => _notes = value,
               ),
-              onChanged: (value) => _notes = value,
             ),
-          ),
-          const SizedBox(height: 24),
-        ],
-      ),
-    );
+            const SizedBox(height: 24),
+          ],
+        ));
   }
 
   // Date selection with theme support
@@ -372,7 +449,8 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         elevation: 0,
         title: Text(
           _isEditing ? 'تعديل معاملة' : 'إضافة معاملة',
-          style: theme.textTheme.displaySmall?.copyWith(
+          style: theme.textTheme.headlineMedium?.copyWith(
+            fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface,
           ),
         ),
@@ -458,7 +536,7 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                     child: Text(
                       _isEditing ? 'حفظ التعديلات' : 'حفظ',
                       style: theme.textTheme.labelLarge?.copyWith(
-                        color: Colors.white,
+                        color: theme.colorScheme.onPrimary,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
