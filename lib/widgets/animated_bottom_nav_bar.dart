@@ -2,96 +2,202 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:nabd/theme/app_colors.dart';
 
-/// A floating glassmorphic bottom navigation bar with animated icons.
+/// A modern glassmorphic bottom navigation bar with a centered FAB.
 class AnimatedBottomNavBar extends StatelessWidget {
   final int selectedIndex;
   final ValueChanged<int> onItemSelected;
+  final VoidCallback? onAddPressed;
+
   const AnimatedBottomNavBar({
     Key? key,
     required this.selectedIndex,
     required this.onItemSelected,
+    this.onAddPressed,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-        child: Container(
-          color: Theme.of(context).brightness == Brightness.light
-              ? Colors.white.withOpacity(0.6)
-              : Colors.black.withOpacity(0.3),
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _NavItem(
-                icon: Icons.home,
-                index: 0,
-                isSelected: selectedIndex == 0,
-                onTap: onItemSelected,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    // تحديد لون خلفية الشريط بناءً على الثيم
+    final Color barGlassBaseColor = isDark ? Colors.black : Colors.white;
+    final double barGlassOpacity =
+        isDark ? 0.35 : 0.65; // شفافية أعلى قليلاً من 0.3 للوضوح
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Main navigation bar with glass effect
+        ClipRect(
+          child: BackdropFilter(
+            filter: ImageFilter.blur(
+                sigmaX: 20.0, sigmaY: 20.0), // تمويه أعلى لعمق أفضل
+            child: Container(
+              height: 80,
+              decoration: BoxDecoration(
+                color: barGlassBaseColor.withOpacity(barGlassOpacity),
+                border: Border(
+                  // حد علوي خفيف جداً
+                  top: BorderSide(
+                    color: isDark
+                        ? Colors.white.withOpacity(0.08) // شفافية أقل
+                        : Colors.black.withOpacity(0.08),
+                    width: 0.5,
+                  ),
+                ),
               ),
-              _NavItem(
-                icon: Icons.list,
-                index: 1,
-                isSelected: selectedIndex == 1,
-                onTap: onItemSelected,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _buildNavItem(0, Icons.home_outlined, 'الرئيسية', context),
+                  _buildNavItem(
+                      1, Icons.bar_chart_outlined, 'التقارير', context),
+                  const SizedBox(width: 64), // Space for FAB
+                  _buildNavItem(2, Icons.wallet_outlined, 'المحفظة', context),
+                  _buildNavItem(
+                      3, Icons.settings_outlined, 'الإعدادات', context),
+                ],
               ),
-              SizedBox(width: 56), // spacing for FAB
-              _NavItem(
-                icon: Icons.emoji_events,
-                index: 2,
-                isSelected: selectedIndex == 2,
-                onTap: onItemSelected,
-              ),
-              _NavItem(
-                icon: Icons.settings,
-                index: 3,
-                isSelected: selectedIndex == 3,
-                onTap: onItemSelected,
-              ),
-            ],
+            ),
           ),
         ),
-      ),
+
+        // Floating Action Button with glass effect
+        GestureDetector(
+          onTap: onAddPressed,
+          child: AnimatedContainer(
+            // استخدام نفس AnimatedContainer من _buildNavItem
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            padding: const EdgeInsets.all(12), // Padding مناسب للأيقونة
+            decoration: BoxDecoration(
+              // نفس التدرج اللوني الزجاجي للعناصر المختارة
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.primaryLight.withOpacity(isDark ? 0.2 : 0.1),
+                  AppColors.primaryColor.withOpacity(isDark ? 0.3 : 0.2),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              shape: BoxShape.rectangle, // هذا هو التغيير الأساسي: دائري
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color:
+                    AppColors.primaryColor.withOpacity(0.4), // حد أقوى لتمييزه
+                width: 0.5,
+              ),
+              boxShadow: [
+                // ظل خفيف للعنصر المختار
+                BoxShadow(
+                  color: AppColors.primaryColor.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: const Icon(
+              // أيقونة الإضافة
+              Icons.add_rounded,
+              color: AppColors.primaryColor, // لون أيقونة الثيم الأساسي
+              size: 35, // حجم أيقونة مناسب
+            ),
+          ),
+        ),
+      ],
     );
   }
-}
 
-class _NavItem extends StatelessWidget {
-  final int index;
-  final IconData icon;
-  final bool isSelected;
-  final ValueChanged<int> onTap;
+  Widget _buildNavItem(
+      int index, IconData icon, String label, BuildContext context) {
+    final isSelected = selectedIndex == index;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
-  const _NavItem({
-    Key? key,
-    required this.index,
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => onTap(index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
-        padding: const EdgeInsets.all(12),
-        decoration: isSelected
-            ? BoxDecoration(
-                color: AppColors.primaryColor.withOpacity(0.2),
-                shape: BoxShape.circle,
-              )
-            : null,
-        child: Icon(
-          icon,
-          size: isSelected ? 28 : 24,
-          color: isSelected
-              ? AppColors.primaryColor
-              : Theme.of(context).iconTheme.color,
+      onTap: () => onItemSelected(index),
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 75, // عرض أكبر قليلاً للعنصر
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Glass effect container for icon
+            AnimatedContainer(
+              // استخدام AnimatedContainer للحركات
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeInOut,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    isSelected
+                        ? AppColors.primaryLight.withOpacity(
+                            isDark ? 0.2 : 0.1) // ألوان من AppColors
+                        : (isDark
+                            ? Colors.white.withOpacity(0.05)
+                            : Colors.black.withOpacity(0.02)),
+                    isSelected
+                        ? AppColors.primaryColor.withOpacity(
+                            isDark ? 0.3 : 0.2) // ألوان من AppColors
+                        : (isDark
+                            ? Colors.white.withOpacity(0.02)
+                            : Colors.black.withOpacity(0.01)),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius:
+                    BorderRadius.circular(16), // حواف دائرية أكبر قليلاً
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.primaryColor
+                          .withOpacity(0.4) // حد أقوى للمختار
+                      : (isDark
+                          ? Colors.white
+                              .withOpacity(0.08) // حد خفيف لغير المختار
+                          : Colors.black.withOpacity(0.05)),
+                  width: 0.5,
+                ),
+                boxShadow: isSelected
+                    ? [
+                        // ظل خفيف للعنصر المختار
+                        BoxShadow(
+                          color: AppColors.primaryColor.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Icon(
+                icon,
+                size: 24, // حجم أيقونة ثابت وواضح
+                color: isSelected
+                    ? AppColors.primaryColor // لون أيقونة الثيم الأساسي
+                    : (isDark
+                        ? AppColors
+                            .iconDark // لون أيقونة الثيم الداكن لغير المختار
+                        : AppColors
+                            .iconLight), // لون أيقونة الثيم الفاتح لغير المختار
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                // استخدام labelSmall من AppTextStyles
+                color: isSelected
+                    ? AppColors.primaryColor // لون نص الثيم الأساسي
+                    : (isDark
+                        ? AppColors
+                            .subtextDark // لون نص الثيم الداكن لغير المختار
+                        : AppColors
+                            .subtextLight), // لون نص الثيم الفاتح لغير المختار
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                height: 1.2,
+              ),
+            ),
+          ],
         ),
       ),
     );

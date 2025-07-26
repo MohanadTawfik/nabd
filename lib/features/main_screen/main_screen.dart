@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:nabd/features/transactions/screens/add_transaction_screen.dart';
 import 'package:nabd/theme/app_colors.dart';
 import 'package:nabd/features/dashboard/screens/dashboard_screen.dart';
 import 'package:nabd/features/goals/screens/goals_screen.dart';
@@ -34,19 +35,30 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.transparent,
-      // 2. قمنا بتبسيط كل شيء هنا. الزر الآن معزول بالكامل
-      extendBody: true, // مهم لجعل الجسم يمتد خلف الشريط السفلي
-      body: GlassBackground(
-        child: _widgetOptions.elementAt(_selectedIndex),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      floatingActionButton: const MagicFab(), // استخدام البوابة السحرية
-      bottomNavigationBar: AnimatedBottomNavBar(
-        selectedIndex: _selectedIndex,
-        onItemSelected: _onItemTapped,
-      ),
-    );
+        backgroundColor: Colors.transparent,
+        // 2. قمنا بتبسيط كل شيء هنا. الزر الآن معزول بالكامل
+        extendBody: true, // مهم لجعل الجسم يمتد خلف الشريط السفلي
+        body: GlassBackground(
+          child: _widgetOptions.elementAt(_selectedIndex),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+        bottomNavigationBar: AnimatedBottomNavBar(
+          selectedIndex: _selectedIndex,
+          onItemSelected: (index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          },
+          onAddPressed: () {
+            // Handle FAB tap
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) => AddTransactionScreen(),
+            );
+          },
+        ));
   }
 
   Widget _buildNavItem(IconData icon, int index) {
