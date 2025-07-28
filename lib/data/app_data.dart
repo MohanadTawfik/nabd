@@ -17,11 +17,193 @@ class AppData with ChangeNotifier {
   bool _isFilterActive = false;
 
   // 2. قائمة الفئات الآن هي المصدر الحقيقي
-  final List<Category> _categories = [];
+  final List<Category> _categories = [
+    Category(
+      id: 'qat',
+      name: 'القات',
+      icon: Icons.local_florist,
+      color: Color(0xFF8BC34A),
+      type: TransactionType.expense,
+    ),
+    Category(
+      id: 'food',
+      name: 'طعام',
+      icon: Icons.restaurant,
+      color: Color(0xFFFF6B6B),
+      type: TransactionType.expense,
+    ),
+    Category(
+      id: 'transport',
+      name: 'مواصلات',
+      icon: Icons.directions_car,
+      color: Color(0xFF4ECDC4),
+      type: TransactionType.expense,
+    ),
+    Category(
+      id: 'shopping',
+      name: 'تسوق',
+      icon: Icons.shopping_cart,
+      color: Color(0xFF45B7D1),
+      type: TransactionType.expense,
+    ),
+    Category(
+      id: 'bills',
+      name: 'فواتير',
+      icon: Icons.receipt_long,
+      color: Color(0xFF96CEB4),
+      type: TransactionType.expense,
+    ),
+    Category(
+      id: 'entertainment',
+      name: 'ترفيه',
+      icon: Icons.movie,
+      color: Color(0xFFFFEEAD),
+      type: TransactionType.expense,
+    ),
+    Category(
+      id: 'health',
+      name: 'صحة',
+      icon: Icons.medical_services,
+      color: Color(0xFFD4A5A5),
+      type: TransactionType.expense,
+    ),
+    Category(
+      id: 'education',
+      name: 'تعليم',
+      icon: Icons.school,
+      color: Color(0xFF9B5DE5),
+      type: TransactionType.expense,
+    ),
+    Category(
+      id: 'other',
+      name: 'أخرى',
+      icon: Icons.category,
+      color: Color(0xFF6C757D),
+      type: TransactionType.expense,
+    ),
+    Category(
+      id: 'salary',
+      name: 'راتب',
+      icon: Icons.work,
+      color: Color(0xFF45B7D1),
+      type: TransactionType.income,
+    ),
+    Category(
+      id: 'bonus',
+      name: 'مكافئة',
+      icon: Icons.card_giftcard,
+      color: Color(0xFF8BC34A),
+      type: TransactionType.income,
+    ),
+    Category(
+      id: 'other',
+      name: 'أخرى',
+      icon: Icons.category,
+      color: Color(0xFF6C757D),
+      type: TransactionType.income,
+    ),
+    // Category(
+    //   id: 'debt_installments',
+    //   name: 'دفع ديون واقساط',
+    //   icon: Icons.payments,
+    //   color: Color(0xFF9B5DE5),
+    //   type: TransactionType.debt,
+    // ),
+    // Category(
+    //   id: 'debt_settlement',
+    //   name: 'تسديد ديون واقساط',
+    //   icon: Icons.check_circle,
+    //   color: Color(0xFF45B7D1),
+    //   type: TransactionType.debt,
+    // ),
+  ];
 
-  final List<Goal> _goals = [];
+  final List<Goal> _goals = [
+    Goal(
+        name: 'سيارة أحلامي',
+        icon: Icons.directions_car,
+        savedAmount: 750000.0,
+        totalAmount: 1000000.0,
+        color: Colors.blue.shade300),
+    Goal(
+        name: 'السفر إلى سقطرى',
+        icon: Icons.airplanemode_active,
+        savedAmount: 200000.0,
+        totalAmount: 500000.0,
+        color: Colors.teal.shade300),
+  ];
 
   final List<Budget> _budgets = [];
+
+  // Initialize budgets in the constructor after categories are defined
+  void _initializeBudgets() {
+    final now = DateTime.now();
+    final endDate =
+        DateTime(now.year, now.month + 1, now.day); // One month from now
+
+    _budgets.addAll([
+      Budget(
+        category: _categories.firstWhere((c) => c.id == 'food'),
+        totalAmount: 50000,
+        startDate: now,
+        endDate: endDate,
+      ),
+      Budget(
+        category: _categories.firstWhere((c) => c.id == 'shopping'),
+        totalAmount: 40000,
+        startDate: now,
+        endDate: endDate,
+      ),
+      Budget(
+        category: _categories.firstWhere((c) => c.id == 'qat'),
+        totalAmount: 30000,
+        startDate: now,
+        endDate: endDate,
+      ),
+      Budget(
+        category: _categories.firstWhere((c) => c.id == 'transport'),
+        totalAmount: 50000,
+        startDate: now,
+        endDate: endDate,
+      ),
+      Budget(
+        category: _categories.firstWhere((c) => c.id == 'bills'),
+        totalAmount: 100000,
+        startDate: now,
+        endDate: endDate,
+      ),
+      Budget(
+        category: _categories.firstWhere((c) => c.id == 'entertainment'),
+        totalAmount: 20000,
+        startDate: now,
+        endDate: endDate,
+      ),
+      Budget(
+        category: _categories.firstWhere((c) => c.id == 'health'),
+        totalAmount: 30000,
+        startDate: now,
+        endDate: endDate,
+      ),
+      Budget(
+        category: _categories.firstWhere((c) => c.id == 'education'),
+        totalAmount: 15000,
+        startDate: now,
+        endDate: endDate,
+      ),
+      Budget(
+        category: _categories.firstWhere((c) => c.id == 'salary'),
+        totalAmount: 20000,
+        startDate: now,
+        endDate: endDate,
+      ),
+      Budget(
+        category: _categories.firstWhere((c) => c.id == 'bonus'),
+        totalAmount: 20000,
+        startDate: now,
+        endDate: endDate,
+      ),
+    ]);
+  }
 
   // 1. قائمة جديدة للأحداث (مثل تحقيق هدف)
   final List<TimelineItem> _events = [];
@@ -352,137 +534,8 @@ class AppData with ChangeNotifier {
   }
 
   AppData() {
-    _initializeCategories();
     // Initialize categories and transactions first
-    _initializeTransactions();
-    // Initialize budgets after categories are available
-    _initializeBudgets();
-    _updateBudgets();
-    _initializeGoals();
-  }
-
-  void _initializeCategories() {
-    _categories.addAll([
-      Category(
-        id: 'qat',
-        name: 'القات',
-        icon: Icons.local_florist,
-        color: Color(0xFF8BC34A),
-        type: TransactionType.expense,
-      ),
-      Category(
-        id: 'food',
-        name: 'طعام',
-        icon: Icons.restaurant,
-        color: Color(0xFFFF6B6B),
-        type: TransactionType.expense,
-      ),
-      Category(
-        id: 'transport',
-        name: 'مواصلات',
-        icon: Icons.directions_car,
-        color: Color(0xFF4ECDC4),
-        type: TransactionType.expense,
-      ),
-      Category(
-        id: 'shopping',
-        name: 'تسوق',
-        icon: Icons.shopping_cart,
-        color: Color(0xFF45B7D1),
-        type: TransactionType.expense,
-      ),
-      Category(
-        id: 'bills',
-        name: 'فواتير',
-        icon: Icons.receipt_long,
-        color: Color(0xFF96CEB4),
-        type: TransactionType.expense,
-      ),
-      Category(
-        id: 'entertainment',
-        name: 'ترفيه',
-        icon: Icons.movie,
-        color: Color(0xFFFFEEAD),
-        type: TransactionType.expense,
-      ),
-      Category(
-        id: 'health',
-        name: 'صحة',
-        icon: Icons.medical_services,
-        color: Color(0xFFD4A5A5),
-        type: TransactionType.expense,
-      ),
-      Category(
-        id: 'education',
-        name: 'تعليم',
-        icon: Icons.school,
-        color: Color(0xFF9B5DE5),
-        type: TransactionType.expense,
-      ),
-      Category(
-        id: 'other',
-        name: 'أخرى',
-        icon: Icons.category,
-        color: Color(0xFF6C757D),
-        type: TransactionType.expense,
-      ),
-      Category(
-        id: 'salary',
-        name: 'راتب',
-        icon: Icons.work,
-        color: Color(0xFF45B7D1),
-        type: TransactionType.income,
-      ),
-      Category(
-        id: 'bonus',
-        name: 'مكافئة',
-        icon: Icons.card_giftcard,
-        color: Color(0xFF8BC34A),
-        type: TransactionType.income,
-      ),
-      Category(
-        id: 'other',
-        name: 'أخرى',
-        icon: Icons.category,
-        color: Color(0xFF6C757D),
-        type: TransactionType.income,
-      ),
-      // Category(
-      //   id: 'debt_installments',
-      //   name: 'دفع ديون واقساط',
-      //   icon: Icons.payments,
-      //   color: Color(0xFF9B5DE5),
-      //   type: TransactionType.debt,
-      // ),
-      // Category(
-      //   id: 'debt_settlement',
-      //   name: 'تسديد ديون واقساط',
-      //   icon: Icons.check_circle,
-      //   color: Color(0xFF45B7D1),
-      //   type: TransactionType.debt,
-      // ),
-    ]);
-  }
-
-  void _initializeGoals() {
-    _goals.addAll([
-      Goal(
-          name: 'سيارة أحلامي',
-          icon: Icons.directions_car,
-          savedAmount: 750000.0,
-          totalAmount: 1000000.0,
-          color: Colors.blue.shade300),
-      Goal(
-          name: 'السفر إلى سقطرى',
-          icon: Icons.airplanemode_active,
-          savedAmount: 200000.0,
-          totalAmount: 500000.0,
-          color: Colors.teal.shade300),
-    ]);
-  }
-
-  void _initializeTransactions() {
-    _transactions.addAll([
+    _transactions = [
       Transaction(
           id: 't1',
           category: _categories.firstWhere((c) => c.id == 'salary'),
@@ -543,76 +596,9 @@ class AppData with ChangeNotifier {
           amount: 10000,
           type: TransactionType.expense,
           date: DateTime.now().subtract(const Duration(days: 0))),
-    ]);
-  }
-
-  // Initialize budgets in the constructor after categories are defined
-  void _initializeBudgets() {
-    final now = DateTime.now();
-    final endDate =
-        DateTime(now.year, now.month + 1, now.day); // One month from now
-
-    _budgets.addAll([
-      Budget(
-        category: _categories.firstWhere((c) => c.id == 'food'),
-        totalAmount: 50000,
-        startDate: now,
-        endDate: endDate,
-      ),
-      Budget(
-        category: _categories.firstWhere((c) => c.id == 'shopping'),
-        totalAmount: 40000,
-        startDate: now,
-        endDate: endDate,
-      ),
-      Budget(
-        category: _categories.firstWhere((c) => c.id == 'qat'),
-        totalAmount: 30000,
-        startDate: now,
-        endDate: endDate,
-      ),
-      Budget(
-        category: _categories.firstWhere((c) => c.id == 'transport'),
-        totalAmount: 50000,
-        startDate: now,
-        endDate: endDate,
-      ),
-      Budget(
-        category: _categories.firstWhere((c) => c.id == 'bills'),
-        totalAmount: 100000,
-        startDate: now,
-        endDate: endDate,
-      ),
-      Budget(
-        category: _categories.firstWhere((c) => c.id == 'entertainment'),
-        totalAmount: 20000,
-        startDate: now,
-        endDate: endDate,
-      ),
-      Budget(
-        category: _categories.firstWhere((c) => c.id == 'health'),
-        totalAmount: 30000,
-        startDate: now,
-        endDate: endDate,
-      ),
-      Budget(
-        category: _categories.firstWhere((c) => c.id == 'education'),
-        totalAmount: 15000,
-        startDate: now,
-        endDate: endDate,
-      ),
-      Budget(
-        category: _categories.firstWhere((c) => c.id == 'salary'),
-        totalAmount: 20000,
-        startDate: now,
-        endDate: endDate,
-      ),
-      Budget(
-        category: _categories.firstWhere((c) => c.id == 'bonus'),
-        totalAmount: 20000,
-        startDate: now,
-        endDate: endDate,
-      ),
-    ]);
+    ];
+    // Initialize budgets after categories are available
+    _initializeBudgets();
+    _updateBudgets();
   }
 }
