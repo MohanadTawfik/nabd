@@ -64,20 +64,33 @@ class _AnimatedBalanceCardState extends State<AnimatedBalanceCard>
             opacity: _opacityAnimation.value,
             child: GlassCard(
               padding: const EdgeInsets.all(20),
+              borderRadius: 24, // Increased border radius for more modern look
+              blurStrength: 10, // Increased blur for better glass effect
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Balance Label
+                  // Balance Label with improved styling
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        'الرصيد الحالي',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color:
-                              isDark ? Colors.white70 : AppColors.textSecondary,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.account_balance_wallet_outlined,
+                            color: theme.colorScheme.primary,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'الرصيد الحالي',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              color: isDark
+                                  ? Colors.white70
+                                  : AppColors.textSecondary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
@@ -85,6 +98,10 @@ class _AnimatedBalanceCardState extends State<AnimatedBalanceCard>
                         decoration: BoxDecoration(
                           color: theme.colorScheme.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: theme.colorScheme.primary.withOpacity(0.2),
+                            width: 1,
+                          ),
                         ),
                         child: Text(
                           'شهري',
@@ -96,7 +113,7 @@ class _AnimatedBalanceCardState extends State<AnimatedBalanceCard>
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16), // Increased spacing
 
                   // Balance Amount
                   Row(

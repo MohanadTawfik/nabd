@@ -257,6 +257,36 @@ class AppData with ChangeNotifier {
 
   List<Goal> get goals => _goals;
   List<Budget> get budgets => _budgets;
+  List<Budget> get activeBudgets => _budgets.where((budget) => 
+      budget.endDate.isAfter(DateTime.now()) && 
+      budget.startDate.isBefore(DateTime.now())).toList();
+      
+  // Financial insights methods
+  double getMonthlyExpenses() {
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    final endOfMonth = DateTime(now.year, now.month + 1, 0);
+    
+    return _transactions
+        .where((transaction) => 
+            transaction.type == TransactionType.expense &&
+            transaction.date.isAfter(startOfMonth) &&
+            transaction.date.isBefore(endOfMonth.add(const Duration(days: 1))))
+        .fold(0, (sum, transaction) => sum + transaction.amount);
+  }
+  
+  double getMonthlyIncome() {
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    final endOfMonth = DateTime(now.year, now.month + 1, 0);
+    
+    return _transactions
+        .where((transaction) => 
+            transaction.type == TransactionType.income &&
+            transaction.date.isAfter(startOfMonth) &&
+            transaction.date.isBefore(endOfMonth.add(const Duration(days: 1))))
+        .fold(0, (sum, transaction) => sum + transaction.amount);
+  }
   double get totalIncome => _transactions
       .where((t) => t.type == TransactionType.income)
       .fold(0.0, (sum, item) => sum + item.amount);

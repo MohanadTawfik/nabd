@@ -3,13 +3,16 @@ import 'package:nabd/features/journey/screens/journey_screen.dart';
 import 'package:nabd/features/reports/screens/reports_screen.dart';
 
 class InsightsHubScreen extends StatelessWidget {
-  const InsightsHubScreen({super.key});
+  final int initialTab;
+
+  const InsightsHubScreen({super.key, this.initialTab = 0});
 
   @override
   Widget build(BuildContext context) {
     // 1. استخدام DefaultTabController لتنظيم كل شيء
     return DefaultTabController(
       length: 2, // لدينا قسمين
+      initialIndex: initialTab,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('مركز الرؤى'),
