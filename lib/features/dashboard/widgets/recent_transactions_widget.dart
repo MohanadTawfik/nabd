@@ -18,6 +18,7 @@ class RecentTransactionsWidget extends StatelessWidget {
     return Consumer<AppData>(
       builder: (context, appData, child) {
         final recentTransactions = appData.transactions.take(4).toList();
+       
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,

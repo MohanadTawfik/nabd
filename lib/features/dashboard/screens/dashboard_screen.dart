@@ -1,17 +1,11 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:nabd/theme/app_paddings.dart';
-import 'package:nabd/theme/app_text_styles.dart';
 import 'package:nabd/features/dashboard/widgets/animated_balance_card.dart';
-import 'package:nabd/features/dashboard/widgets/quick_actions_widget.dart';
 import 'package:nabd/features/dashboard/widgets/daily_tips_widget.dart';
-import 'package:nabd/features/dashboard/widgets/budgets_card.dart';
-import 'package:nabd/features/dashboard/widgets/level_indicator_widget.dart';
 import 'package:nabd/features/dashboard/widgets/recent_transactions_widget.dart';
 import 'package:nabd/data/app_data.dart';
 import 'package:nabd/widgets/glass_background.dart';
-import '../widgets/goals_section.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -124,22 +118,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                     padding: const EdgeInsets.all(16.0),
                     sliver: SliverList(
                       delegate: SliverChildListDelegate([
-                        // Level Indicator
-                        AnimatedBuilder(
-                          animation: _slideAnimation,
-                          builder: (context, child) {
-                            return Transform.translate(
-                              offset: _slideAnimation.value * 20,
-                              child: child,
-                            );
-                          },
-                          child: FadeTransition(
-                            opacity: _fadeAnimation,
-                            child: const LevelIndicatorWidget(),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
                         // Balance Card
                         AnimatedBuilder(
                           animation: _slideAnimation,
@@ -157,24 +135,20 @@ class _DashboardScreenState extends State<DashboardScreen>
                         ),
                         const SizedBox(height: 24),
 
-                        // Quick Actions
-                        FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: const QuickActionsWidget(),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Goals Section
-                        FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: const GoalsSection(),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Budgets Card
-                        FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: const BudgetsCard(),
+                        // Level Indicator
+                        AnimatedBuilder(
+                          animation: _slideAnimation,
+                          builder: (context, child) {
+                            return Transform.translate(
+                              offset: _slideAnimation.value * 20,
+                              child: child,
+                            );
+                          },
+                          child: // Daily Tips
+                              FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: const DailyTipsWidget(),
+                          ),
                         ),
                         const SizedBox(height: 24),
 
@@ -185,11 +159,6 @@ class _DashboardScreenState extends State<DashboardScreen>
                         ),
                         const SizedBox(height: 24),
 
-                        // Daily Tips
-                        FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: const DailyTipsWidget(),
-                        ),
                         SizedBox(
                             height: MediaQuery.of(context).padding.bottom + 16),
                       ]),

@@ -377,11 +377,19 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                   ),
                   itemCount: _filteredCategories.length,
                   itemBuilder: (context, index) {
+                    // final budgetedCategoryIds = appData.budgets
+                    //     .where((b) => b.category != null)
+                    //     .map((b) => b.category!.id)
+                    //     .toSet();
                     final category = _filteredCategories[index];
+                    // final isAlreadyBudgeted =
+                    //     budgetedCategoryIds.contains(category.id);
                     final isSelected = _selectedCategory?.id == category.id;
 
                     return GestureDetector(
-                      onTap: () {
+                      onTap:
+                          //  isAlreadyBudgeted ? null :
+                          () {
                         setState(() {
                           _selectedCategory = category;
                         });
