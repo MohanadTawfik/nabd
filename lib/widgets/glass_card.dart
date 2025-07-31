@@ -8,6 +8,7 @@ class GlassCard extends StatelessWidget {
   final double borderRadius;
   final double blurStrength;
   final double opacity; // درجة الشفافية الافتراضية
+  final EdgeInsets margin;
 
   const GlassCard({
     super.key,
@@ -16,6 +17,7 @@ class GlassCard extends StatelessWidget {
     this.borderRadius = 12.0,
     this.blurStrength = 10.0, // تم تخفيض قوة التمويه قليلاً
     this.opacity = 0.2, // تم زيادة الشفافية الافتراضية قليلاً
+    this.margin = const EdgeInsets.all(0),
   });
 
   @override
@@ -67,6 +69,7 @@ class GlassCard extends StatelessWidget {
             ],
           ),
           padding: padding,
+          margin: margin,
           child: child,
         ),
       ),

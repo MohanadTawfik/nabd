@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nabd/features/goals/screens/goals_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/categories/screens/manage_categories_screen.dart';
@@ -35,38 +36,52 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 8),
               const ProfileHeader(
                 name: 'مصروفي',
-                email: 'masrofi@masrofi.app',
+                email: ' ',
+                // email: 'masrofi@masrofi.app',
               ),
               const SizedBox(height: 8),
 
               // Account Section
-              SettingsSection(
-                title: 'الحساب',
-                items: [
-                  SettingsItem(
-                    icon: Icons.person_outline_rounded,
-                    title: 'الملف الشخصي',
-                    subtitle: 'تعديل بياناتك الشخصية',
-                    onTap: () {},
-                  ),
-                  SettingsItem(
-                    icon: Icons.lock_outline_rounded,
-                    title: 'كلمة المرور',
-                    subtitle: 'تغيير كلمة المرور',
-                    onTap: () {},
-                  ),
-                ],
-              ),
+              // SettingsSection(
+              //   title: 'الحساب',
+              //   items: [
+              //     SettingsItem(
+              //       icon: Icons.person_outline_rounded,
+              //       title: 'الملف الشخصي',
+              //       subtitle: 'تعديل بياناتك الشخصية',
+              //       onTap: () {},
+              //     ),
+              //     SettingsItem(
+              //       icon: Icons.lock_outline_rounded,
+              //       title: 'كلمة المرور',
+              //       subtitle: 'تغيير كلمة المرور',
+              //       onTap: () {},
+              //     ),
+              //   ],
+              // ),
 
               // Financial Settings Section
               SettingsSection(
                 title: 'الإعدادات المالية',
                 items: [
+                  // SettingsItem(
+                  //   icon: Icons.account_balance_wallet_outlined,
+                  //   title: 'المحافظ',
+                  //   subtitle: 'إدارة حساباتك البنكية',
+                  //   onTap: () {},
+                  // ),
                   SettingsItem(
-                    icon: Icons.account_balance_wallet_outlined,
-                    title: 'المحافظ',
-                    subtitle: 'إدارة حساباتك البنكية',
-                    onTap: () {},
+                    icon: Icons.currency_exchange_rounded,
+                    title: ' الاهداف',
+                    subtitle: 'إدارة الاهداف ',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const GoalsScreen(),
+                        ),
+                      );
+                    },
                   ),
                   SettingsItem(
                     icon: Icons.category_outlined,

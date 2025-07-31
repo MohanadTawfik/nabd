@@ -50,9 +50,10 @@ class AnimatedBottomNavBar extends StatelessWidget {
                 children: [
                   _buildNavItem(0, Icons.home_outlined, 'الرئيسية', context),
                   _buildNavItem(
-                      1, Icons.bar_chart_outlined, 'التقارير', context),
+                      1, Icons.pie_chart_outline_rounded, 'الميزانية', context),
                   const SizedBox(width: 64), // Space for FAB
-                  _buildNavItem(2, Icons.wallet_outlined, 'المحفظات', context),
+                  _buildNavItem(
+                      2, Icons.bar_chart_outlined, 'التقارير', context),
                   _buildNavItem(
                       3, Icons.settings_outlined, 'الإعدادات', context),
                 ],

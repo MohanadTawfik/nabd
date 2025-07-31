@@ -141,68 +141,85 @@ class AppData with ChangeNotifier {
     final endDate =
         DateTime(now.year, now.month + 1, now.day); // One month from now
 
-    _budgets.addAll([
+    // Clear existing budgets to prevent duplicates
+    _budgets.clear();
+
+    // Define all budgets with unique IDs
+    final budgetsToAdd = [
       Budget(
+        id: 'food_budget_${now.millisecondsSinceEpoch}',
         category: _categories.firstWhere((c) => c.id == 'food'),
         totalAmount: 50000,
         startDate: now,
         endDate: endDate,
       ),
       Budget(
+        id: 'shopping_budget_${now.millisecondsSinceEpoch + 1}',
         category: _categories.firstWhere((c) => c.id == 'shopping'),
         totalAmount: 40000,
         startDate: now,
         endDate: endDate,
       ),
       Budget(
+        id: 'qat_budget_${now.millisecondsSinceEpoch + 2}',
         category: _categories.firstWhere((c) => c.id == 'qat'),
-        totalAmount: 30000,
+        totalAmount: 10000,
         startDate: now,
         endDate: endDate,
       ),
       Budget(
+        id: 'transport_budget_${now.millisecondsSinceEpoch + 3}',
         category: _categories.firstWhere((c) => c.id == 'transport'),
         totalAmount: 50000,
         startDate: now,
         endDate: endDate,
       ),
       Budget(
+        id: 'bills_budget_${now.millisecondsSinceEpoch + 4}',
         category: _categories.firstWhere((c) => c.id == 'bills'),
         totalAmount: 100000,
         startDate: now,
         endDate: endDate,
       ),
       Budget(
+        id: 'entertainment_budget_${now.millisecondsSinceEpoch + 5}',
         category: _categories.firstWhere((c) => c.id == 'entertainment'),
-        totalAmount: 20000,
+        totalAmount: 10000,
         startDate: now,
         endDate: endDate,
       ),
       Budget(
+        id: 'health_budget_${now.millisecondsSinceEpoch + 6}',
         category: _categories.firstWhere((c) => c.id == 'health'),
         totalAmount: 30000,
         startDate: now,
         endDate: endDate,
       ),
       Budget(
+        id: 'education_budget_${now.millisecondsSinceEpoch + 7}',
         category: _categories.firstWhere((c) => c.id == 'education'),
         totalAmount: 15000,
         startDate: now,
         endDate: endDate,
       ),
       Budget(
+        id: 'salary_budget_${now.millisecondsSinceEpoch + 8}',
         category: _categories.firstWhere((c) => c.id == 'salary'),
         totalAmount: 20000,
         startDate: now,
         endDate: endDate,
       ),
       Budget(
+        id: 'bonus_budget_${now.millisecondsSinceEpoch + 9}',
         category: _categories.firstWhere((c) => c.id == 'bonus'),
         totalAmount: 20000,
         startDate: now,
         endDate: endDate,
       ),
-    ]);
+    ];
+
+    // Add all budgets
+    _budgets.addAll(budgetsToAdd);
   }
 
   // 1. قائمة جديدة للأحداث (مثل تحقيق هدف)
@@ -285,7 +302,7 @@ class AppData with ChangeNotifier {
     for (var budget in _budgets) {
       final progress = budget.spentAmount / budget.totalAmount;
       if (progress >= 0.8 && progress < 1.0) {
-        return 'انتبه! لقد اقتربت من الوصول إلى حد ميزانية "${budget.category.name}".';
+        return 'انتبه! لقد اقتربت من الوصول إلى حد ميزانية "${budget.category?.name}".';
       }
     }
     return null;
@@ -429,22 +446,42 @@ class AppData with ChangeNotifier {
     }
   }
 
-  void deleteBudget(Budget budget) {
+  // void deleteBudget(Budget budget) {
+  //   _budgets.removeWhere((b) => b.id == budget.id);
+  //   notifyListeners();
+  // }
+  /// Deletes a budget from the app data.
+  /// Returns [true] if the budget was found and deleted, [false] otherwise.
+  bool deleteBudget(Budget? budget) {
+    if (budget == null) return false;
+
+    final initialLength = _budgets.length;
     _budgets.removeWhere((b) => b.id == budget.id);
-    notifyListeners();
+
+    final wasRemoved = _budgets.length < initialLength;
+    if (wasRemoved) {
+      // Optionally clean up related data here
+      // _cleanupBudgetData(budget.id);
+      notifyListeners();
+    }
+
+    return wasRemoved;
   }
 
   Budget? getBudgetById(String id) {
     try {
-      return _budgets.firstWhere((budget) => budget.id == id);
-    } catch (e) {
+      return _budgets.firstWhere(
+        (budget) => budget.id == id,
+        orElse: () => throw StateError('Budget not found'),
+      );
+    } on StateError {
       return null;
     }
   }
 
   List<Budget> getBudgetsForCategory(String categoryId) {
     return _budgets
-        .where((budget) => budget.category.id == categoryId)
+        .where((budget) => budget.category?.id == categoryId)
         .toList();
   }
 
@@ -527,7 +564,7 @@ class AppData with ChangeNotifier {
       final spent = _transactions
           .where((t) =>
               t.type == TransactionType.expense &&
-              t.category.id == budget.category.id)
+              t.category.id == budget.category?.id)
           .fold(0.0, (sum, item) => sum + item.amount);
       budget.spentAmount = spent;
     }

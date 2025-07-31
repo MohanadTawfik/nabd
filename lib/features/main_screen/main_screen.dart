@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nabd/features/transactions/screens/add_transaction_screen.dart';
 import 'package:nabd/features/dashboard/screens/dashboard_screen.dart';
-import 'package:nabd/features/goals/screens/goals_screen.dart';
+import 'package:nabd/features/budgets/screens/budgets_screen.dart';
 import 'package:nabd/features/insights_hub/screens/insights_hub_screen.dart';
 import 'package:nabd/features/settings/screens/settings_screen.dart';
 import 'package:nabd/widgets/animated_bottom_nav_bar.dart';
@@ -18,8 +18,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
 
   static const List<Widget> _widgetOptions = <Widget>[
     DashboardScreen(),
+    BudgetsScreen(),
     InsightsHubScreen(),
-    GoalsScreen(),
     SettingsScreen(),
   ];
 

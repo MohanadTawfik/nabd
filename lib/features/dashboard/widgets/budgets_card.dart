@@ -65,7 +65,7 @@ class BudgetsCard extends StatelessWidget {
                         : 0.0;
                     return _buildBudgetIndicator(
                       context: context,
-                      name: budget.category.name,
+                      name: budget.category?.name ?? 'اليزانية العامة',
                       progress: progress,
                       spent: budget.spentAmount,
                       total: budget.totalAmount,
@@ -87,7 +87,7 @@ class BudgetsCard extends StatelessWidget {
     required double progress,
     required double spent,
     required double total,
-    required Category category,
+    Category? category,
   }) {
     final color = progress < 0.5
         ? Colors.green
