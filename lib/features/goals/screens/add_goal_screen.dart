@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/goals/models/goal_model.dart';
 import 'package:provider/provider.dart';
+import 'package:nabd/features/goals/goals_provider.dart';
 
 class AddGoalScreen extends StatefulWidget {
   const AddGoalScreen({super.key});
@@ -12,9 +12,10 @@ class AddGoalScreen extends StatefulWidget {
 
 class _AddGoalScreenState extends State<AddGoalScreen> {
   final _formKey = GlobalKey<FormState>();
-  IconData _selectedIcon = Icons.star;
+  bool _isSaving = false;
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
+  IconData _selectedIcon = Icons.star;
   Color _selectedColor = Colors.blue.shade300;
 
   final List<Map<String, dynamic>> _icons = [
@@ -41,20 +42,38 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
   }
 
   // 1. دالة الحفظ الآن تستخدم Provider
-  void _saveGoal() {
+  Future<void> _saveGoal() async {
     if (_formKey.currentState!.validate()) {
+      setState(() {
+        _isSaving = true;
+      });
+      
+      try {
       final newGoal = Goal(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
         name: _nameController.text,
         icon: _selectedIcon,
         totalAmount: double.tryParse(_amountController.text) ?? 0.0,
         color: _selectedColor,
       );
 
-      // 2. إضافة الهدف مباشرة إلى AppData
-      Provider.of<AppData>(context, listen: false).addGoal(newGoal);
+      // 2. Add the goal using the GoalsProvider
+      await Provider.of<GoalsProvider>(context, listen: false).addGoal(newGoal);
 
-      // 3. العودة للشاشة السابقة (لم نعد بحاجة لإرجاع بيانات)
-      Navigator.pop(context);
+      } catch (e) {
+        // Show error message if needed
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('حدث خطأ أثناء حفظ الهدف: $e')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isSaving = false;
+          });
+        }
+      }
     }
   }
 
@@ -99,7 +118,7 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _saveGoal,
+                  onPressed: _isSaving ? null : _saveGoal,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xff8952ff),
                     foregroundColor: Colors.white,
@@ -107,9 +126,18 @@ class _AddGoalScreenState extends State<AddGoalScreen> {
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('إطلاق الحلم!',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  child: _isSaving
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text('إطلاق الحلم!',
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],

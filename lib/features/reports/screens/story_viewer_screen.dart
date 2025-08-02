@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../data/app_data.dart';
+import 'package:nabd/features/reports/reports_provider.dart';
 import '../widgets/story_page.dart';
 import '../widgets/story_progress_bar.dart';
 
@@ -48,8 +48,9 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   }
 
   void _nextStory() {
-    final appData = Provider.of<AppData>(context, listen: false);
-    final storyPages = _buildStoryPages(appData);
+    final reportsProvider =
+        Provider.of<ReportsProvider>(context, listen: false);
+    final storyPages = _buildStoryPages(reportsProvider);
     if (_currentPageIndex < storyPages.length - 1) {
       setState(() {
         _currentPageIndex++;
@@ -82,13 +83,15 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
   void dispose() {
     _pageController.dispose();
     _animationController.dispose();
+
+    // Remove animation controller to fix "A disposed RenderObject was mutated" error
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final appData = Provider.of<AppData>(context);
-    final storyPages = _buildStoryPages(appData);
+    final reportsProvider = Provider.of<ReportsProvider>(context);
+    final storyPages = _buildStoryPages(reportsProvider);
 
     return GestureDetector(
       onTapDown: (details) {
@@ -127,30 +130,21 @@ class _StoryViewerScreenState extends State<StoryViewerScreen>
     );
   }
 
-  List<Widget> _buildStoryPages(AppData appData) {
-    // ... (هذا الجزء لم يتغير)
+  List<Widget> _buildStoryPages(ReportsProvider reportsProvider) {
+    // Example: Use reportsProvider to get summary data for the story pages
+    // You can further customize this logic as needed
+    final monthlyReport = reportsProvider.reports.isNotEmpty
+        ? reportsProvider.reports.first
+        : null;
     return [
       StoryPage(
         key: const ValueKey('page1'),
         title: 'ملخص شهر يوليو',
         icon: Icons.calendar_today,
-        content: Text.rich(
-          TextSpan(
-            style:
-                const TextStyle(color: Colors.white, fontSize: 24, height: 1.5),
-            children: [
-              const TextSpan(text: 'كان شهراً حافلاً! \n دخلك الإجمالي كان '),
-              TextSpan(
-                  text: '${appData.totalIncome.toStringAsFixed(0)} ريال',
-                  style: const TextStyle(
-                      color: Colors.green, fontWeight: FontWeight.bold)),
-              const TextSpan(text: '\n ومجموع مصروفاتك وصل إلى '),
-              TextSpan(
-                  text: '${appData.totalExpense.toStringAsFixed(0)} ريال',
-                  style: const TextStyle(
-                      color: Colors.red, fontWeight: FontWeight.bold)),
-            ],
-          ),
+        content: Text(
+          monthlyReport?.content ?? 'لا توجد بيانات متاحة',
+          style:
+              const TextStyle(color: Colors.white, fontSize: 24, height: 1.5),
           textAlign: TextAlign.center,
         ),
       ),

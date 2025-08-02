@@ -9,10 +9,16 @@ class InsightsHubScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. استخدام DefaultTabController لتنظيم كل شيء
+    // Get arguments if passed through named routes
+    final Map<String, dynamic>? args = 
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final int tabIndex = args != null && args.containsKey('initialTab') 
+        ? args['initialTab'] as int 
+        : initialTab;
+        
     return DefaultTabController(
-      length: 2, // لدينا قسمين
-      initialIndex: initialTab,
+      length: 2,
+      initialIndex: tabIndex,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('مركز الرؤى'),

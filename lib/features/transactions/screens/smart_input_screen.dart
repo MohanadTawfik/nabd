@@ -2,13 +2,17 @@
 import 'dart:io';
 import 'dart:ui'; // لـ ImageFilter
 import 'package:flutter/material.dart';
-import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/transactions/screens/add_transaction_screen.dart';
+import 'package:nabd/features/transactions/transactions_provider.dart';
 import 'package:nabd/theme/app_colors.dart';
 import 'package:nabd/features/categories/models/category_model.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:nabd/widgets/glass_background.dart';
 import 'package:nabd/widgets/glass_card.dart';
+import 'package:nabd/widgets/empty_state.dart';
+import 'package:nabd/widgets/loading_state.dart';
+import 'package:nabd/widgets/error_state.dart';
+import 'package:nabd/utils/ui_utils.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
@@ -22,29 +26,16 @@ class SmartInputScreen extends StatefulWidget {
   State<SmartInputScreen> createState() => _SmartInputScreenState();
 }
 
-class _SmartInputScreenState extends State<SmartInputScreen>
-    with SingleTickerProviderStateMixin {
+class _SmartInputScreenState extends State<SmartInputScreen> {
   final TextEditingController _chatInputController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
   List<Transaction> _extractedTransactions = [];
   bool _isLoading = false;
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 300),
-    );
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutBack, // تأثير ارتداد لطيف
-      ),
-    );
     _chatInputController.addListener(() {
       setState(() {
         // إعادة بناء فقط لتحديث حالة زر الإرسال
@@ -55,24 +46,41 @@ class _SmartInputScreenState extends State<SmartInputScreen>
   @override
   void dispose() {
     _chatInputController.dispose();
-    _animationController.dispose();
     super.dispose();
   }
 
   Category _getCategory(String categoryName, TransactionType type) {
-    final appData = Provider.of<AppData>(context, listen: false);
+    final provider = Provider.of<TransactionsProvider>(context, listen: false);
     try {
-      return appData.categories.firstWhere(
-        (c) => c.name == categoryName && c.type == type,
-      );
+      return provider.transactions
+          .firstWhere(
+            (t) => t.category.name == categoryName && t.category.type == type,
+            orElse: () => provider.transactions.isNotEmpty
+                ? provider.transactions.first
+                : Transaction(
+                    id: const Uuid().v4(),
+                    amount: 0.0,
+                    category: Category(
+                      id: const Uuid().v4(),
+                      name: categoryName,
+                      type: type,
+                      color: Colors.grey,
+                      icon: Icons.category,
+                    ),
+                    type: type,
+                    date: DateTime.now(),
+                    notes: '',
+                    source: '',
+                  ),
+          )
+          .category;
     } catch (e) {
-      try {
-        return appData.categories.firstWhere(
-          (c) => c.name == 'أخرى' && c.type == type,
-        );
-      } catch (e) {
-        return appData.categories.first;
-      }
+      return Category(
+          id: const Uuid().v4(),
+          name: categoryName,
+          type: type,
+          color: Colors.grey,
+          icon: Icons.category);
     }
   }
 
@@ -112,7 +120,6 @@ class _SmartInputScreenState extends State<SmartInputScreen>
           ));
       _isLoading = false;
     });
-    _animationController.forward(from: 0.0);
   }
 
   Future<void> _pickImage(ImageSource source) async {
@@ -141,7 +148,6 @@ class _SmartInputScreenState extends State<SmartInputScreen>
           _extractedTransactions.insert(0, newTxn);
           _isLoading = false;
         });
-        _animationController.forward(from: 0.0);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -217,7 +223,6 @@ class _SmartInputScreenState extends State<SmartInputScreen>
           _extractedTransactions.insertAll(0, newTxns);
           _isLoading = false;
         });
-        _animationController.forward(from: 0.0);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -265,27 +270,12 @@ class _SmartInputScreenState extends State<SmartInputScreen>
     }
 
     bool allSaved = true;
-    final appData = Provider.of<AppData>(context, listen: false);
+    final provider = Provider.of<TransactionsProvider>(context, listen: false);
 
     try {
       for (var txn in _extractedTransactions) {
         try {
-          final category = appData.categories.firstWhere(
-            (c) => c.id == txn.category.id,
-            orElse: () => _getCategory(txn.category.name, txn.type),
-          );
-
-          final transactionToSave = Transaction(
-            id: const Uuid().v4(),
-            category: category,
-            amount: txn.amount,
-            type: txn.type,
-            date: txn.date,
-            notes: txn.notes ?? 'تم الإدخال عبر ${txn.source}',
-            source: txn.source,
-          );
-
-          appData.addTransaction(transactionToSave);
+          await provider.addTransaction(txn);
         } catch (e) {
           debugPrint('Error saving transaction: $e');
           allSaved = false;
@@ -357,7 +347,6 @@ class _SmartInputScreenState extends State<SmartInputScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // final isDark = theme.brightness == Brightness.dark; // لم تعد تستخدم مباشرة هنا
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -378,24 +367,18 @@ class _SmartInputScreenState extends State<SmartInputScreen>
         ),
         actions: [
           if (_extractedTransactions.isNotEmpty && !_isLoading)
-            FadeTransition(
-              opacity: _scaleAnimation,
-              child: ScaleTransition(
-                scale: _scaleAnimation,
-                child: IconButton(
-                  icon: Icon(Icons.check_circle_outline,
-                      color: AppColors.successColor),
-                  onPressed: () async {
-                    bool saved = await _saveAllExtractedTransactions();
-                    if (saved && mounted) {
-                      setState(() {
-                        _extractedTransactions.clear(); // مسح القائمة بعد الحفظ
-                      });
-                    }
-                  },
-                  tooltip: 'حفظ الكل',
-                ),
-              ),
+            IconButton(
+              icon: Icon(Icons.check_circle_outline,
+                  color: AppColors.successColor),
+              onPressed: () async {
+                bool saved = await _saveAllExtractedTransactions();
+                if (saved && mounted) {
+                  setState(() {
+                    _extractedTransactions.clear();
+                  });
+                }
+              },
+              tooltip: 'حفظ الكل',
             ),
           const SizedBox(width: 8),
         ],
@@ -406,31 +389,12 @@ class _SmartInputScreenState extends State<SmartInputScreen>
             child: GlassBackground(
               child: SafeArea(
                 child: _isLoading
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                theme.colorScheme.primary,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'جاري معالجة البيانات...',
-                              style: theme.textTheme.bodyLarge?.copyWith(
-                                color: theme.colorScheme.onSurface,
-                              ),
-                            ),
-                          ],
-                        ),
+                    ? const LoadingState(
+                        message: 'جاري معالجة البيانات...',
                       )
-                    : AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        child: _extractedTransactions.isEmpty
-                            ? _buildEmptyState(theme)
-                            : _buildTransactionList(theme),
-                      ),
+                    : _extractedTransactions.isEmpty
+                        ? _buildEmptyState(theme)
+                        : _buildTransactionList(theme),
               ),
             ),
           ),
@@ -563,163 +527,94 @@ class _SmartInputScreenState extends State<SmartInputScreen>
   }
 
   void _showAttachmentOptions() {
-    showModalBottomSheet(
+    UiUtils.showCustomBottomSheet(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        final theme = Theme.of(context);
-        final isDark = theme.brightness == Brightness.dark;
-        return ClipRRect(
-          // إضافة ClipRRect هنا لـ BottomSheet
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(
-                sigmaX: 10, sigmaY: 10), // تمويه خفيف للـ BottomSheet
-            child: Container(
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.cardDark.withOpacity(0.9)
-                    : AppColors.cardLight.withOpacity(0.9),
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(24)),
-                border: Border.all(
-                  color: isDark
-                      ? Colors.white.withOpacity(0.1)
-                      : Colors.black.withOpacity(0.1),
-                  width: 0.5,
-                ),
-              ),
-              child: SafeArea(
-                // SafeArea لضمان عدم تداخل المحتوى مع منطقة الكيبورد
-                top: false, // لا نريد مسافة في الأعلى لأنها ليست AppBar
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.symmetric(vertical: 12),
-                      decoration: BoxDecoration(
-                        color: theme.dividerColor.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    _buildAttachmentOption(
-                      icon: Icons.camera_alt_rounded,
-                      label: 'التقاط صورة فاتورة',
-                      onTap: () {
-                        Navigator.pop(context);
-                        _pickImage(ImageSource.camera);
-                      },
-                    ),
-                    _buildAttachmentOption(
-                      icon: Icons.photo_library_rounded,
-                      label: 'اختيار من المعرض',
-                      onTap: () {
-                        Navigator.pop(context);
-                        _pickImage(ImageSource.gallery);
-                      },
-                    ),
-                    _buildAttachmentOption(
-                      icon: Icons.insert_drive_file_rounded,
-                      label: 'رفع ملف (PDF, Excel, CSV)', // نص أوضح
-                      onTap: () {
-                        Navigator.pop(context);
-                        _pickFile();
-                      },
-                    ),
-                  ],
-                ),
-              ),
+      title: 'اختر طريقة الإدخال',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: CircleAvatar(
+              backgroundColor:
+                  Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              child: Icon(Icons.camera_alt,
+                  color: Theme.of(context).colorScheme.primary),
             ),
+            title: const Text('التقاط صورة'),
+            subtitle: const Text('استخدم الكاميرا لالتقاط صورة'),
+            onTap: () {
+              Navigator.pop(context);
+              _pickImage(ImageSource.camera);
+            },
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildAttachmentOption({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-  }) {
-    final theme = Theme.of(context);
-    return ListTile(
-      leading: Container(
-        width: 48, // حجم أكبر قليلاً للأيقونة
-        height: 48,
-        decoration: BoxDecoration(
-          color: theme.colorScheme.primary.withOpacity(0.12), // شفافية أعلى
-          borderRadius: BorderRadius.circular(16), // حواف أكثر دائرية
-        ),
-        child: Icon(
-          icon,
-          color: theme.colorScheme.primary,
-          size: 28, // حجم الأيقونة أكبر قليلاً
-        ),
+          ListTile(
+            leading: CircleAvatar(
+              backgroundColor:
+                  Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              child: Icon(Icons.photo_library,
+                  color: Theme.of(context).colorScheme.primary),
+            ),
+            title: const Text('اختيار صورة من المعرض'),
+            subtitle: const Text('اختر صورة موجودة من معرض الصور'),
+            onTap: () {
+              Navigator.pop(context);
+              _pickImage(ImageSource.gallery);
+            },
+          ),
+          ListTile(
+            leading: CircleAvatar(
+              backgroundColor:
+                  Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              child: Icon(Icons.file_present,
+                  color: Theme.of(context).colorScheme.primary),
+            ),
+            title: const Text('اختيار ملف'),
+            subtitle: const Text('اختر ملف PDF أو Excel لاستخراج المعاملات'),
+            onTap: () {
+              Navigator.pop(context);
+              _pickFile();
+            },
+          ),
+          const SizedBox(height: 16),
+        ],
       ),
-      title: Text(
-        label,
-        style: theme.textTheme.bodyLarge?.copyWith(
-          color: theme.colorScheme.onSurface,
-          fontWeight: FontWeight.w500, // وزن خط متوسط
-        ),
-      ),
-      onTap: onTap,
     );
   }
 
   void _showVoiceInputDialog(BuildContext context) {
-    showDialog(
+    UiUtils.showCustomDialog(
       context: context,
-      barrierDismissible: false, // لا يمكن إغلاقها بالنقر خارجها
-      builder: (context) {
-        final theme = Theme.of(context);
-        return AlertDialog(
-          backgroundColor: theme.colorScheme.surface,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Center(
-            child: Text(
-              'الكتابة بالصوت',
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.mic_rounded,
-                  size: 60,
-                  color: theme.colorScheme.primary), // أيقونة أكبر ولون متناسق
-              const SizedBox(height: 16),
-              Text(
-                'تحدث الآن...',
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.8),
+      title: 'الكتابة بالصوت',
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.mic_rounded,
+              size: 60, color: Theme.of(context).colorScheme.primary),
+          const SizedBox(height: 16),
+          Text(
+            'تحدث الآن...',
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color:
+                      Theme.of(context).colorScheme.onSurface.withOpacity(0.8),
                 ),
-              ),
-              const SizedBox(height: 16),
-              const CircularProgressIndicator(),
-            ],
           ),
-          actionsAlignment:
-              MainAxisAlignment.center, // محاذاة الأزرار في المنتصف
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'إلغاء',
-                style: theme.textTheme.labelLarge?.copyWith(
-                  color: theme.colorScheme.error,
+          const SizedBox(height: 16),
+          const LoadingState(message: ""),
+        ],
+      ),
+      barrierDismissible: false,
+      actionsAlignment: MainAxisAlignment.center,
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(
+            'إلغاء',
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
                 ),
-              ),
-            ),
-          ],
-        );
-      },
+          ),
+        ),
+      ],
     );
     // يمكن هنا إضافة منطق لبدء الاستماع الصوتي وإغلاق الـ dialog تلقائياً
   }
@@ -730,104 +625,67 @@ class _SmartInputScreenState extends State<SmartInputScreen>
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 150,
-                height: 150,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      theme.colorScheme.primary.withOpacity(0.7),
-                      theme.colorScheme.secondary.withOpacity(0.7),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.colorScheme.primary.withOpacity(0.2),
-                      blurRadius: 20,
-                      spreadRadius: 5,
+          child: EmptyState(
+            icon: Icons.auto_awesome_motion_rounded,
+            iconSize: 70,
+            iconColor: theme.colorScheme.onPrimary,
+            iconBackground: LinearGradient(
+              colors: [
+                theme.colorScheme.primary.withOpacity(0.7),
+                theme.colorScheme.secondary.withOpacity(0.7),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            title: 'أدخل تفاصيل مصروفاتك بطريقة ذكية',
+            titleStyle: theme.textTheme.headlineMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              height: 1.3,
+            ),
+            message:
+                'يمكنك كتابة تفاصيل المعاملة أو إرفاق صورة أو ملف للاستخراج التلقائي',
+            messageStyle: theme.textTheme.bodyLarge?.copyWith(
+              color: theme.hintColor.withOpacity(0.8),
+              height: 1.5,
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildActionButton(
+                      theme,
+                      icon: Icons.camera_alt_outlined,
+                      label: 'التقط صورة',
+                      onTap: () => _pickImage(ImageSource.camera),
+                    ),
+                    const SizedBox(width: 16),
+                    _buildActionButton(
+                      theme,
+                      icon: Icons.photo_library_outlined,
+                      label: 'اختر صورة',
+                      onTap: () => _pickImage(ImageSource.gallery),
+                    ),
+                    const SizedBox(width: 16),
+                    _buildActionButton(
+                      theme,
+                      icon: Icons.file_present_outlined,
+                      label: 'اختر ملف',
+                      onTap: _pickFile,
                     ),
                   ],
                 ),
-                child: Icon(
-                  Icons.auto_awesome_motion_rounded,
-                  size: 70,
-                  color: theme.colorScheme.onPrimary,
-                ),
-              ),
-              const SizedBox(height: 32),
-              ShaderMask(
-                blendMode: BlendMode.srcIn,
-                shaderCallback: (bounds) => LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.secondary,
-                  ],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ).createShader(bounds),
-                child: Text(
-                  'ابدأ بإضافة معاملاتك بذكاء!',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    height: 1.3,
+                const SizedBox(height: 32),
+                Text(
+                  'أو ابدأ بالكتابة في الحقل أدناه...',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.hintColor.withOpacity(0.6),
+                    fontStyle: FontStyle.italic,
                   ),
-                  textAlign: TextAlign.center,
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'استخدم أدواتنا الذكية لإضافة معاملاتك المالية بسهولة وسرعة.', // نص محسّن
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: theme.hintColor.withOpacity(0.8),
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 40),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  _buildActionButton(
-                    theme,
-                    icon: Icons.text_fields_rounded,
-                    label: 'نص',
-                    onTap: () {
-                      // عند النقر على "نص"، يجب أن ينتقل التركيز إلى حقل الإدخال السفلي
-                      FocusScope.of(context).requestFocus(
-                          FocusNode()); // سيؤدي إلى إظهار الكيبورد
-                    },
-                  ),
-                  const SizedBox(width: 16),
-                  _buildActionButton(
-                    theme,
-                    icon: Icons.camera_alt_rounded,
-                    label: 'كاميرا',
-                    onTap: () => _pickImage(ImageSource.camera),
-                  ),
-                  const SizedBox(width: 16),
-                  _buildActionButton(
-                    theme,
-                    icon: Icons.upload_file_rounded,
-                    label: 'ملف',
-                    onTap: _pickFile,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-              Text(
-                'أو ابدأ بالكتابة في الحقل أدناه...',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.hintColor.withOpacity(0.6),
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -901,113 +759,100 @@ class _SmartInputScreenState extends State<SmartInputScreen>
         final Category displayCategory =
             _getCategory(txn.category.name, txn.type);
 
-        return ScaleTransition(
-          scale: _scaleAnimation,
-          child: FadeTransition(
-            opacity: _scaleAnimation,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4.0),
-              child: GlassCard(
-                padding: const EdgeInsets.all(12),
-                blurStrength: 10,
-                opacity: theme.brightness == Brightness.dark ? 0.15 : 0.1,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: (txn.type == TransactionType.expense
-                                ? AppColors.expenseColor
-                                : AppColors.incomeColor)
-                            .withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        displayCategory.icon ??
-                            (txn.type == TransactionType.expense
-                                ? Icons.money_off
-                                : Icons.attach_money),
-                        color: displayCategory.color ??
-                            (txn.type == TransactionType.expense
-                                ? AppColors.expenseColor
-                                : AppColors.incomeColor),
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            displayCategory.name,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: theme.colorScheme.onSurface),
-                          ),
-                          Text(
-                            '${DateFormat('EEEE, d MMM yyyy', 'ar').format(txn.date)} - ${txn.source}', // تنسيق تاريخ مفصل
-                            style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.hintColor.withOpacity(0.7)),
-                          ),
-                          if (txn.notes != null && txn.notes!.isNotEmpty)
-                            Text(
-                              txn.notes!,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.hintColor.withOpacity(0.6)),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '${txn.amount.toStringAsFixed(2)} ﷼',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            color: txn.type == TransactionType.expense
-                                ? AppColors.expenseColor
-                                : AppColors.incomeColor,
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4.0),
+          child: GlassCard(
+            padding: const EdgeInsets.all(12),
+            blurStrength: 10,
+            opacity: theme.brightness == Brightness.dark ? 0.15 : 0.1,
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: (txn.type == TransactionType.expense
+                            ? AppColors.expenseColor
+                            : AppColors.incomeColor)
+                        .withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    displayCategory.icon,
+                    color: displayCategory.color,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        displayCategory.name,
+                        style: theme.textTheme.bodyLarge?.copyWith(
                             fontWeight: FontWeight.bold,
-                          ),
+                            color: theme.colorScheme.onSurface),
+                      ),
+                      Text(
+                        '${DateFormat('EEEE, d MMM yyyy', 'ar').format(txn.date)} - ${txn.source}', // تنسيق تاريخ مفصل
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: theme.hintColor.withOpacity(0.7)),
+                      ),
+                      if (txn.notes != null && txn.notes!.isNotEmpty)
+                        Text(
+                          txn.notes!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.hintColor.withOpacity(0.6)),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: Icon(Icons.edit,
-                                  size: 20, color: theme.colorScheme.primary),
-                              onPressed: () => _editExtractedTransaction(index),
-                              tooltip: 'تعديل',
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                  minWidth: 32,
-                                  minHeight: 32), // زيادة حجم منطقة النقر
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.delete_outline,
-                                  size: 20, color: theme.colorScheme.error),
-                              onPressed: () =>
-                                  _deleteExtractedTransaction(index),
-                              tooltip: 'حذف',
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(
-                                  minWidth: 32,
-                                  minHeight: 32), // زيادة حجم منطقة النقر
-                            ),
-                          ],
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '${txn.amount.toStringAsFixed(2)} ﷼',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        color: txn.type == TransactionType.expense
+                            ? AppColors.expenseColor
+                            : AppColors.incomeColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          icon: Icon(Icons.edit,
+                              size: 20, color: theme.colorScheme.primary),
+                          onPressed: () => _editExtractedTransaction(index),
+                          tooltip: 'تعديل',
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                              minWidth: 32,
+                              minHeight: 32), // زيادة حجم منطقة النقر
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.delete_outline,
+                              size: 20, color: theme.colorScheme.error),
+                          onPressed: () => _deleteExtractedTransaction(index),
+                          tooltip: 'حذف',
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
+                              minWidth: 32,
+                              minHeight: 32), // زيادة حجم منطقة النقر
                         ),
                       ],
                     ),
                   ],
                 ),
-              ),
+              ],
             ),
           ),
         );

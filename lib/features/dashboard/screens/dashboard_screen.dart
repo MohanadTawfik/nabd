@@ -1,19 +1,19 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/dashboard/widgets/animated_balance_card.dart';
 import 'package:nabd/features/dashboard/widgets/daily_tips_widget.dart';
+import 'package:nabd/features/dashboard/widgets/expense_summary_chart.dart';
 import 'package:nabd/features/dashboard/widgets/recent_transactions_widget.dart';
-import 'package:nabd/features/transactions/screens/add_transaction_screen.dart';
-import 'package:nabd/features/budgets/screens/add_budget_screen.dart';
-import 'package:nabd/features/goals/screens/add_goal_screen.dart';
-import 'package:nabd/features/insights/screens/insights_hub_screen.dart';
+import 'package:nabd/features/dashboard/widgets/quick_stats_widget.dart';
+import 'package:nabd/features/dashboard/widgets/transaction_filter_sheet.dart';
+import 'package:nabd/features/transactions/transactions_provider.dart';
+import 'package:nabd/features/budgets/budgets_provider.dart';
+import 'package:nabd/features/goals/goals_provider.dart';
+import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:nabd/widgets/glass_background.dart';
 import 'package:nabd/widgets/glass_card.dart';
 import 'package:nabd/theme/app_colors.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:provider/provider.dart';
-import 'package:shimmer/shimmer.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -23,56 +23,98 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen>
-    with SingleTickerProviderStateMixin {
-  
+    with WidgetsBindingObserver {
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _initializeData();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _refreshData();
+    }
+  }
+
+  Future<void> _initializeData() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      // Load all necessary data
+      await Future.wait([
+        context.read<TransactionsProvider>().loadTransactions(),
+        context.read<BudgetsProvider>().loadBudgets(),
+        context.read<GoalsProvider>().loadGoals(),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = 'Failed to load dashboard data';
+        });
+      }
+    }
+  }
+
+  Future<void> _refreshData() async {
+    await _initializeData();
+  }
+
   void _handleQuickAction(int index) {
     switch (index) {
       case 0: // Add Transaction
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          backgroundColor: Colors.transparent,
-          builder: (context) => const AddTransactionScreen(),
-        );
+        Navigator.of(context).pushNamed('/add_transaction');
         break;
       case 1: // Add Budget
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => const AddBudgetScreen()),
-        );
+        Navigator.of(context).pushNamed('/add_budget');
         break;
       case 2: // Add Goal
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => const AddGoalScreen()),
-        );
+        Navigator.of(context).pushNamed('/add_goal');
         break;
       case 3: // Reports
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => const InsightsHubScreen()),
-        );
+        Navigator.of(context).pushNamed('/insights');
         break;
     }
+  }
+
+  void _showFilterSheet() {
+    TransactionFilterSheet.show(context);
   }
 
   void _handleInsightTap(int index) {
     switch (index) {
       case 0: // Monthly Expenses
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => const InsightsHubScreen(initialTab: 0),
-          ),
-        );
+        Navigator.of(context)
+            .pushNamed('/insights', arguments: {'initialTab': 0});
         break;
       case 1: // Monthly Income
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => const InsightsHubScreen(initialTab: 1),
-          ),
-        );
+        Navigator.of(context)
+            .pushNamed('/insights', arguments: {'initialTab': 1});
         break;
       case 2: // Active Budgets
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => const AddBudgetScreen()),
-        );
+        Navigator.of(context).pushNamed('/budgets');
         break;
     }
   }
@@ -149,36 +191,58 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildInsightCard(int index, ThemeData theme, AppData appData) {
+  Widget _buildInsightCard(
+      int index,
+      ThemeData theme,
+      TransactionsProvider transactionsProvider,
+      BudgetsProvider budgetsProvider) {
+    // Calculate monthly expenses and income
+    final now = DateTime.now();
+    final monthlyTransactions = transactionsProvider.transactions
+        .where((t) => t.date.month == now.month && t.date.year == now.year)
+        .toList();
+
+    final monthlyExpenses = monthlyTransactions
+        .where((t) => t.type == TransactionType.expense)
+        .fold<double>(0, (sum, t) => sum + t.amount);
+
+    final monthlyIncome = monthlyTransactions
+        .where((t) => t.type == TransactionType.income)
+        .fold<double>(0, (sum, t) => sum + t.amount);
+
+    final activeBudgets = budgetsProvider.budgets
+        .where((b) => b.endDate.isAfter(now) || b.endDate.isAtSameMomentAs(now))
+        .length;
+
     final List<Map<String, dynamic>> insights = [
       {
         'title': 'المصروفات الشهرية',
-        'value': appData.getMonthlyExpenses().toStringAsFixed(0),
+        'value': monthlyExpenses.toStringAsFixed(0),
         'icon': Icons.trending_down_rounded,
         'color': AppColors.expenseColor,
-        'change': '-12%',
-        'isPositive': false,
-        'subtitle': 'مقارنة بالشهر الماضي',
-        'currency': 'ر.س',
+        'change': '', // TODO: Calculate percentage change from previous month
+        'isPositive': null,
+        'subtitle': 'إجمالي مصروفات هذا الشهر',
+        'currency': 'ريال',
       },
       {
         'title': 'الدخل الشهري',
-        'value': appData.getMonthlyIncome().toStringAsFixed(0),
+        'value': monthlyIncome.toStringAsFixed(0),
         'icon': Icons.trending_up_rounded,
         'color': AppColors.incomeColor,
-        'change': '+8%',
-        'isPositive': true,
-        'subtitle': 'مقارنة بالشهر الماضي',
-        'currency': 'ر.س',
+        'change': '', // TODO: Calculate percentage change from previous month
+        'isPositive': null,
+        'subtitle': 'إجمالي دخل هذا الشهر',
+        'currency': 'ريال',
       },
       {
         'title': 'الميزانيات النشطة',
-        'value': appData.activeBudgets.length.toString(),
+        'value': activeBudgets.toString(),
         'icon': Icons.pie_chart_rounded,
         'color': AppColors.accentColor,
-        'change': '3 متبقية',
+        'change': '',
         'isPositive': null,
-        'subtitle': 'ميزانيات هذا الشهر',
+        'subtitle': 'إجمالي الميزانيات النشطة',
         'currency': '',
       },
     ];
@@ -262,15 +326,10 @@ class _DashboardScreenState extends State<DashboardScreen>
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Shimmer.fromColors(
-                        baseColor: theme.colorScheme.primary,
-                        highlightColor: insight['color'],
-                        period: const Duration(seconds: 3),
-                        child: Text(
-                          insight['value'],
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                      Text(
+                        insight['value'],
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                       if (insight['currency'].isNotEmpty)
@@ -312,66 +371,78 @@ class _DashboardScreenState extends State<DashboardScreen>
           )),
     );
   }
-  late final AnimationController _animationController;
-  late final Animation<double> _fadeAnimation;
-  late final Animation<Offset> _slideAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeInOut),
-      ),
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutQuart,
-    ));
-
-    _animationController.forward();
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final transactionsProvider =
+        Provider.of<TransactionsProvider>(context, listen: false);
+    final budgetsProvider =
+        Provider.of<BudgetsProvider>(context, listen: false);
+    final goalsProvider = Provider.of<GoalsProvider>(context, listen: false);
+
+    // Show loading indicator while data is being loaded
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    // Show error message if there was an error loading data
+    if (_error != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Dashboard')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 60),
+              const SizedBox(height: 16),
+              Text('Error: $_error'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _refreshData,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
-      extendBodyBehindAppBar: true, // Allow content to extend behind app bar
+      extendBodyBehindAppBar: true,
       body: GlassBackground(
         child: SafeArea(
-          child: Consumer<AppData>(
-            builder: (context, appData, child) {
-              return CustomScrollView(
-                physics: const BouncingScrollPhysics(),
-                slivers: [
-                  // Enhanced App Bar with Greeting
-                  SliverAppBar(
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    floating: true,
-                    pinned: true,
-                    expandedHeight:
-                        80, // Taller app bar for better visual hierarchy
-                    title: FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: Row(
+          child: MultiProvider(
+            providers: [
+              ChangeNotifierProvider<TransactionsProvider>.value(
+                value: transactionsProvider,
+              ),
+              ChangeNotifierProvider<BudgetsProvider>.value(
+                value: budgetsProvider,
+              ),
+              ChangeNotifierProvider<GoalsProvider>.value(
+                value: goalsProvider,
+              ),
+            ],
+            child:
+                Consumer3<TransactionsProvider, BudgetsProvider, GoalsProvider>(
+              builder: (context, transactionsProvider, budgetsProvider,
+                  goalsProvider, child) {
+                return CustomScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  slivers: [
+                    // Enhanced App Bar with Greeting
+                    SliverAppBar(
+                      backgroundColor: Colors.transparent,
+                      elevation: 0,
+                      floating: true,
+                      pinned: true,
+                      expandedHeight: 80,
+                      title: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(8),
@@ -395,88 +466,81 @@ class _DashboardScreenState extends State<DashboardScreen>
                           ),
                         ],
                       ),
-                    ),
-                    actions: [
-                      IconButton(
-                        icon: const Icon(Icons.search_rounded),
-                        onPressed: () {},
-                        tooltip: 'بحث',
-                        style: IconButton.styleFrom(
-                          backgroundColor:
-                              theme.colorScheme.surface.withOpacity(0.5),
-                          foregroundColor: theme.colorScheme.primary,
+                      actions: [
+                        IconButton(
+                          icon: const Icon(Icons.filter_list_rounded),
+                          onPressed: _showFilterSheet,
+                          tooltip: 'تصفية وترتيب',
+                          style: IconButton.styleFrom(
+                            backgroundColor:
+                                theme.colorScheme.surface.withOpacity(0.5),
+                            foregroundColor: theme.colorScheme.primary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton(
-                        icon: Stack(
-                          children: [
-                            const Icon(Icons.notifications_outlined),
-                            Positioned(
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(1.5),
-                                decoration: BoxDecoration(
-                                  color: theme.colorScheme.error,
-                                  borderRadius: BorderRadius.circular(6),
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 12,
-                                  minHeight: 12,
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: const Icon(Icons.search_rounded),
+                          onPressed: () {},
+                          tooltip: 'بحث',
+                          style: IconButton.styleFrom(
+                            backgroundColor:
+                                theme.colorScheme.surface.withOpacity(0.5),
+                            foregroundColor: theme.colorScheme.primary,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton(
+                          icon: Stack(
+                            children: [
+                              const Icon(Icons.notifications_outlined),
+                              Positioned(
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.all(1.5),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.error,
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 12,
+                                    minHeight: 12,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        onPressed: () {},
-                        tooltip: 'الإشعارات',
-                      ),
-                    ],
-                  ),
-
-                  // Main Content
-                  SliverPadding(
-                    padding: const EdgeInsets.all(16.0),
-                    sliver: SliverList(
-                      delegate: SliverChildListDelegate([
-                        // Balance Card
-                        AnimatedBuilder(
-                          animation: _slideAnimation,
-                          builder: (context, child) {
-                            return Transform.translate(
-                              offset: _slideAnimation.value * 30,
-                              child: child,
-                            );
-                          },
-                          child: FadeTransition(
-                            opacity: _fadeAnimation,
-                            child: AnimatedBalanceCard(
-                                balance: appData.currentBalance),
+                            ],
                           ),
+                          onPressed: () {},
+                          tooltip: 'الإشعارات',
                         ),
-                        const SizedBox(height: 24),
+                      ],
+                    ),
 
-                        // Level Indicator
-                        AnimatedBuilder(
-                          animation: _slideAnimation,
-                          builder: (context, child) {
-                            return Transform.translate(
-                              offset: _slideAnimation.value * 20,
-                              child: child,
-                            );
-                          },
-                          child: // Daily Tips
-                              FadeTransition(
-                            opacity: _fadeAnimation,
-                            child: const DailyTipsWidget(),
+                    // Main Content
+                    SliverPadding(
+                      padding: const EdgeInsets.all(16.0),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          // Balance Card
+                          AnimatedBalanceCard(
+                            balance: transactionsProvider.transactions
+                                .fold<double>(0, (sum, t) {
+                              return t.type == TransactionType.income
+                                  ? sum + t.amount
+                                  : sum - t.amount;
+                            }),
                           ),
-                        ),
-                        const SizedBox(height: 24),
-                        
-                        // Quick Actions Section
-                        FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: Column(
+                          const SizedBox(height: 18),
+
+                          // Quick Stats Section
+                          const QuickStatsWidget(),
+                          const SizedBox(height: 18),
+
+                          // Daily Tips
+                          const DailyTipsWidget(),
+                          const SizedBox(height: 24),
+
+                          // Quick Actions Section
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Padding(
@@ -490,40 +554,24 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 ),
                               ),
                               SizedBox(
-                                height:
-                                    130, // Increased height to accommodate cards
-                                child: AnimationLimiter(
-                                  child: ListView(
-                                    scrollDirection: Axis.horizontal,
-                                    physics: const BouncingScrollPhysics(),
-                                    children: List.generate(
-                                      4,
-                                      (index) =>
-                                          AnimationConfiguration.staggeredList(
-                                        position: index,
-                                        duration:
-                                            const Duration(milliseconds: 375),
-                                        child: SlideAnimation(
-                                          horizontalOffset: 50.0,
-                                          child: FadeInAnimation(
-                                            child: _buildQuickActionCard(
-                                                index, theme),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
+                                height: 130,
+                                child: ListView(
+                                  key: const Key('quick_actions_list'),
+                                  scrollDirection: Axis.horizontal,
+                                  physics: const BouncingScrollPhysics(),
+                                  children: List.generate(
+                                    4,
+                                    (index) =>
+                                        _buildQuickActionCard(index, theme),
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: 24),
+                          const SizedBox(height: 24),
 
-                        // Financial Insights Section
-                        FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: Column(
+                          // Financial Insights Section
+                          Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Padding(
@@ -537,51 +585,40 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 ),
                               ),
                               SizedBox(
-                                height:
-                                    170, // Further increased height for Android compatibility
-                                child: AnimationLimiter(
-                                  child: ListView(
-                                    scrollDirection: Axis.horizontal,
-                                    physics: const BouncingScrollPhysics(),
-                                    children: List.generate(
-                                      3,
-                                      (index) =>
-                                          AnimationConfiguration.staggeredList(
-                                        position: index,
-                                        duration:
-                                            const Duration(milliseconds: 375),
-                                        child: SlideAnimation(
-                                          horizontalOffset: 50.0,
-                                          child: FadeInAnimation(
-                                            child: _buildInsightCard(
-                                                index, theme, appData),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
+                                height: 170,
+                                child: ListView(
+                                  scrollDirection: Axis.horizontal,
+                                  physics: const BouncingScrollPhysics(),
+                                  children: List.generate(
+                                    3,
+                                    (index) => _buildInsightCard(index, theme,
+                                        transactionsProvider, budgetsProvider),
                                   ),
                                 ),
                               ),
                             ],
                           ),
-                        ),
-                        const SizedBox(height: 24),
-                        
-                        // Recent Transactions
-                        FadeTransition(
-                          opacity: _fadeAnimation,
-                          child: const RecentTransactionsWidget(),
-                        ),
-                        const SizedBox(height: 24),
+                          const SizedBox(height: 24),
 
-                        SizedBox(
-                            height: MediaQuery.of(context).padding.bottom + 16),
-                      ]),
+                          // Expense Summary Chart
+                          ExpenseSummaryChart(
+                              transactions: transactionsProvider.transactions),
+                          const SizedBox(height: 24),
+
+                          // Recent Transactions
+                          RecentTransactionsWidget(),
+                          const SizedBox(height: 24),
+
+                          SizedBox(
+                              height:
+                                  MediaQuery.of(context).padding.bottom + 16),
+                        ]),
+                      ),
                     ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ),

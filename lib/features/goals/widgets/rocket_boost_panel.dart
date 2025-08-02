@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nabd/data/app_data.dart';
+import 'package:nabd/features/goals/goals_provider.dart';
 import 'package:nabd/features/goals/models/goal_model.dart';
 import 'package:provider/provider.dart';
 
@@ -38,10 +38,21 @@ class RocketBoostPanel extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 // إضافة المبلغ للهدف وإغلاق اللوحة
-                Provider.of<AppData>(context, listen: false)
-                    .addSavingsToGoal(goal, boostAmount);
+                final goalsProvider =
+                    Provider.of<GoalsProvider>(context, listen: false);
+                final updatedGoal = Goal(
+                  id: goal.id,
+                  name: goal.name,
+                  icon: goal.icon,
+                  color: goal.color,
+                  savedAmount: goal.savedAmount + boostAmount,
+                  totalAmount: goal.totalAmount,
+                  createdAt: goal.createdAt,
+                  targetDate: goal.targetDate,
+                );
+                await goalsProvider.updateGoal(updatedGoal);
                 Navigator.pop(context);
               },
               style: ElevatedButton.styleFrom(

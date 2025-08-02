@@ -6,6 +6,7 @@ import 'package:nabd/features/insights/screens/insights_hub_screen.dart';
 import 'package:nabd/features/settings/screens/settings_screen.dart';
 import 'package:nabd/widgets/animated_bottom_nav_bar.dart';
 import 'package:nabd/widgets/glass_background.dart';
+import 'package:nabd/utils/ui_utils.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -22,6 +23,47 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     InsightsHubScreen(),
     SettingsScreen(),
   ];
+
+  // Show options for adding transaction or scanning receipt
+  void _showAddOptions(BuildContext context) {
+    UiUtils.showCustomBottomSheet(
+      context: context,
+      title: 'إضافة معاملة جديدة',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: CircleAvatar(
+              backgroundColor:
+                  Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              child:
+                  Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
+            ),
+            title: const Text('إضافة معاملة يدوياً'),
+            subtitle: const Text('إدخال تفاصيل المعاملة بشكل يدوي'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.of(context).pushNamed('/add_transaction');
+            },
+          ),
+          ListTile(
+            leading: CircleAvatar(
+              backgroundColor:
+                  Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              child: Icon(Icons.document_scanner,
+                  color: Theme.of(context).colorScheme.primary),
+            ),
+            title: const Text('مسح فاتورة'),
+            subtitle: const Text('استخدام الكاميرا لمسح وتحليل الفاتورة'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.of(context).pushNamed('/scanner');
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -41,14 +83,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             });
           },
           onAddPressed: () {
-            // Handle FAB tap
-            showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              useSafeArea: true,
-              backgroundColor: Colors.transparent,
-              builder: (context) => AddTransactionScreen(),
-            );
+            // Show options for add transaction or scan receipt
+            _showAddOptions(context);
           },
         ));
   }

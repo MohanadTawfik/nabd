@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:nabd/theme/app_colors.dart';
+import 'package:nabd/utils/animation_config.dart';
 
 /// A modern glassmorphic bottom navigation bar with a centered FAB.
 class AnimatedBottomNavBar extends StatelessWidget {
@@ -64,102 +65,93 @@ class AnimatedBottomNavBar extends StatelessWidget {
 
         // Enhanced Floating Action Button with improved visibility and effects
         Positioned(
-          bottom: 15, // ارتفاع محدد من الأسفل للتأكد من الموضع المثالي
+          bottom: 15,
           child: GestureDetector(
-              onTap: onAddPressed,
-              child: TweenAnimationBuilder<double>(
-                tween: Tween(begin: 1.0, end: 1.0),
-                duration: const Duration(milliseconds: 300),
-                builder: (context, value, child) {
-                  return Transform.scale(
-                    scale: value,
-                    child: Container(
-                      height: 62, // حجم أكبر قليلاً
-                      width: 62,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.primaryColor,
-                            AppColors.accentColor.withOpacity(0.9),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.2),
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primaryColor.withOpacity(0.4),
-                            blurRadius: 15,
-                            spreadRadius: 1,
-                            offset: const Offset(0, 2),
-                          ),
-                          BoxShadow(
-                            color: AppColors.accentColor.withOpacity(0.3),
-                            blurRadius: 10,
-                            spreadRadius: 0,
-                            offset: const Offset(0, -2),
-                          ),
-                        ],
-                      ),
-
-                      child: MouseRegion(
-                        onEnter: (_) {
-                          // This would be used if we implement hover animations
-                        },
-                        onExit: (_) {
-                          // This would be used if we implement hover animations
-                        },
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            // Enhanced glow effect
-                            Container(
-                              decoration: BoxDecoration(
-                                shape: BoxShape.rectangle,
-                                gradient: RadialGradient(
-                                  colors: [
-                                    Colors.white.withOpacity(0.6),
-                                    Colors.white.withOpacity(0.2),
-                                    Colors.transparent,
-                                  ],
-                                  stops: const [0.0, 0.3, 1.0],
-                                  radius: 0.6,
-                                  center: Alignment.center,
-                                ),
-                              ),
-                            ),
-                            // Enhanced icon with shadow
-                            ShaderMask(
-                              shaderCallback: (Rect bounds) {
-                                return LinearGradient(
-                                  colors: [
-                                    Colors.white,
-                                    Colors.white.withOpacity(0.8)
-                                  ],
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                ).createShader(bounds);
-                              },
-                              child: const Icon(
-                                Icons.add_rounded,
-                                color: Colors.white,
-                                size: 34,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              )),
+            onTap: onAddPressed,
+            child: _buildFabContainer(context),
+          ),
         ),
       ],
     );
+  }
+
+  Widget _buildFabContainer(BuildContext context) {
+    return Container(
+        height: 62, // حجم أكبر قليلاً
+        width: 62,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppColors.primaryColor,
+              AppColors.accentColor.withOpacity(0.9),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.2),
+            width: 1.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.primaryColor.withOpacity(0.4),
+              blurRadius: 15,
+              spreadRadius: 1,
+              offset: const Offset(0, 2),
+            ),
+            BoxShadow(
+              color: AppColors.accentColor.withOpacity(0.3),
+              blurRadius: 10,
+              spreadRadius: 0,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: MouseRegion(
+          onEnter: (_) {
+            // This would be used if we implement hover animations
+          },
+          onExit: (_) {
+            // This would be used if we implement hover animations
+          },
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // Enhanced glow effect
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.rectangle,
+                  gradient: RadialGradient(
+                    colors: [
+                      Colors.white.withOpacity(0.6),
+                      Colors.white.withOpacity(0.2),
+                      Colors.transparent,
+                    ],
+                    stops: const [0.0, 0.3, 1.0],
+                    radius: 0.6,
+                    center: Alignment.center,
+                  ),
+                ),
+              ),
+              // Enhanced icon with shadow
+              ShaderMask(
+                shaderCallback: (Rect bounds) {
+                  return LinearGradient(
+                    colors: [Colors.white, Colors.white.withOpacity(0.8)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ).createShader(bounds);
+                },
+                child: const Icon(
+                  Icons.add_rounded,
+                  color: Colors.white,
+                  size: 34,
+                ),
+              ),
+            ],
+          ),
+        ));
   }
 
   Widget _buildNavItem(
@@ -172,87 +164,71 @@ class AnimatedBottomNavBar extends StatelessWidget {
       onTap: () => onItemSelected(index),
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        width: 75, // عرض مناسب للعنصر
+        width: 75,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Enhanced glass effect container for icon with animations
-            TweenAnimationBuilder<double>(
-              tween: Tween(begin: 1.0, end: isSelected ? 1.1 : 1.0),
-              curve: Curves.easeOutBack,
-              duration: const Duration(milliseconds: 300),
-              builder: (context, scale, child) {
-                return Transform.scale(
-                  scale: scale,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          isSelected
-                              ? AppColors.primaryLight.withOpacity(
-                                  isDark ? 0.25 : 0.15) // خلفية أوضح للمختار
-                              : (isDark
-                                  ? Colors.white.withOpacity(0.05)
-                                  : Colors.black.withOpacity(0.02)),
-                          isSelected
-                              ? AppColors.primaryColor.withOpacity(
-                                  isDark ? 0.35 : 0.25) // تدرج أفتح للمختار
-                              : (isDark
-                                  ? Colors.white.withOpacity(0.02)
-                                  : Colors.black.withOpacity(0.01)),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius:
-                          BorderRadius.circular(18), // حواف دائرية أكبر
-                      boxShadow: isSelected
-                          ? [
-                              BoxShadow(
-                                color: AppColors.primaryColor.withOpacity(0.3),
-                                blurRadius: 12,
-                                spreadRadius: 1,
-                                offset: const Offset(0, 3),
-                              )
-                            ]
-                          : null,
-                      border: Border.all(
-                        color: isSelected
-                            ? AppColors.primaryColor
-                                .withOpacity(0.5) // حد أقوى للمختار
-                            : (isDark
-                                ? Colors.white.withOpacity(0.08)
-                                : Colors.black.withOpacity(0.05)),
-                        width: isSelected ? 1.0 : 0.5,
-                      ),
-                    ),
-                    child: Icon(
-                      icon,
-                      size: 24, // حجم أيقونة ثابت
-                      color: isSelected
-                          ? AppColors.primaryColor // لون أيقونة الثيم الأساسي
-                          : (isDark ? AppColors.iconDark : AppColors.iconLight),
-                    ),
-                  ),
-                );
-              },
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    isSelected
+                        ? AppColors.primaryLight
+                            .withOpacity(isDark ? 0.25 : 0.15)
+                        : (isDark
+                            ? Colors.white.withOpacity(0.05)
+                            : Colors.black.withOpacity(0.02)),
+                    isSelected
+                        ? AppColors.primaryColor
+                            .withOpacity(isDark ? 0.35 : 0.25)
+                        : (isDark
+                            ? Colors.white.withOpacity(0.02)
+                            : Colors.black.withOpacity(0.01)),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: isSelected
+                    ? [
+                        BoxShadow(
+                          color: AppColors.primaryColor.withOpacity(0.3),
+                          blurRadius: 12,
+                          spreadRadius: 1,
+                          offset: const Offset(0, 3),
+                        )
+                      ]
+                    : null,
+                border: Border.all(
+                  color: isSelected
+                      ? AppColors.primaryColor.withOpacity(0.5)
+                      : (isDark
+                          ? Colors.white.withOpacity(0.08)
+                          : Colors.black.withOpacity(0.05)),
+                  width: isSelected ? 1.0 : 0.5,
+                ),
+              ),
+              child: Icon(
+                icon,
+                size: 24,
+                color: isSelected
+                    ? AppColors.primaryColor
+                    : (isDark ? AppColors.iconDark : AppColors.iconLight),
+              ),
             ),
-            const SizedBox(height: 6), // زيادة المسافة قليلاً
-            AnimatedDefaultTextStyle(
-              duration: const Duration(milliseconds: 200),
+            const SizedBox(height: 6),
+            DefaultTextStyle(
               style: theme.textTheme.bodySmall?.copyWith(
                     color: isSelected
-                        ? AppColors.primaryColor // لون نص الثيم الأساسي
+                        ? AppColors.primaryColor
                         : (isDark
                             ? AppColors.subtextDark
                             : AppColors.subtextLight),
                     fontWeight:
                         isSelected ? FontWeight.w600 : FontWeight.normal,
-                    fontSize:
-                        isSelected ? 12 : 11, // حجم خط أكبر قليلاً للمختار
-                    letterSpacing: isSelected ? 0.2 : 0.0, // تباعد أحرف للمختار
+                    fontSize: isSelected ? 12 : 11,
+                    letterSpacing: isSelected ? 0.2 : 0.0,
                     height: 1.2,
                   ) ??
                   const TextStyle(),

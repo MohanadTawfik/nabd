@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/goals/models/goal_model.dart';
-import 'package:nabd/features/goals/widgets/rocket_boost_panel.dart';
+import 'package:nabd/features/goals/goals_provider.dart';
 import 'package:nabd/widgets/glass_card.dart';
 import 'package:provider/provider.dart';
 
@@ -12,114 +11,96 @@ class GoalDetailsScreen extends StatelessWidget {
 
   const GoalDetailsScreen({super.key, required this.goal});
 
-  void _showRocketBoostPanel(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => RocketBoostPanel(goal: goal),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final goalsProvider = Provider.of<GoalsProvider>(context);
+    final currentGoal = goalsProvider.goals
+        .firstWhere((g) => g.id == goal.id, orElse: () => goal);
+    final progress =
+        (currentGoal.savedAmount / currentGoal.totalAmount).clamp(0.0, 1.0);
+    final isCompleted = progress >= 1.0;
+    final format = NumberFormat("#,##0", "ar");
 
-    return Consumer<AppData>(
-      builder: (context, appData, child) {
-        final currentGoal =
-            appData.goals.firstWhere((g) => g == goal, orElse: () => goal);
-        final progress =
-            (currentGoal.savedAmount / currentGoal.totalAmount).clamp(0.0, 1.0);
-        final isCompleted = progress >= 1.0;
-        final format = NumberFormat("#,##0", "ar");
-
-        return Scaffold(
-          extendBodyBehindAppBar: true,
-          appBar: AppBar(
-            title: Text(
-              currentGoal.name,
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-            centerTitle: false,
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            systemOverlayStyle: theme.brightness == Brightness.dark
-                ? SystemUiOverlayStyle.light
-                : SystemUiOverlayStyle.dark,
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        title: Text(
+          currentGoal.name,
+          style: theme.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
           ),
+        ),
+        centerTitle: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        systemOverlayStyle: theme.brightness == Brightness.dark
+            ? SystemUiOverlayStyle.light
+            : SystemUiOverlayStyle.dark,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              theme.colorScheme.surface,
+              theme.colorScheme.surfaceVariant.withOpacity(0.5),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+            child: Column(
+              children: [
+                // Progress Circle with Animation
+                _buildProgressCircle(
+                    context, currentGoal, progress, isCompleted),
+                const SizedBox(height: 32),
 
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  theme.colorScheme.surface,
-                  theme.colorScheme.surfaceVariant.withOpacity(0.5),
-                ],
-              ),
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20.0, vertical: 16.0),
-                child: Column(
-                  children: [
-                    // Progress Circle with Animation
-                    _buildProgressCircle(
-                        context, currentGoal, progress, isCompleted),
-                    const SizedBox(height: 32),
+                // Stats Row
+                _buildStatsRow(
+                    context, currentGoal, format, theme, isCompleted),
+                const SizedBox(height: 24),
 
-                    // Stats Row
-                    _buildStatsRow(currentGoal, format, theme, isCompleted),
-                    const SizedBox(height: 24),
+                // Action Buttons
+                _buildActionButtons(
+                    context, goalsProvider, currentGoal, isCompleted, theme),
 
-                    // Action Buttons
-                    _buildActionButtons(
-                        context, appData, currentGoal, isCompleted, theme),
+                // Achieve Goal Button (only if not completed)
+                if (!isCompleted)
+                  _buildAchieveGoalButton(
+                      context, goalsProvider, currentGoal, theme),
 
-                    // Spacer to push content up
-                    const Spacer(),
-
-                    // Achieve Goal Button (only if not completed)
-                    if (!isCompleted)
-                      _buildAchieveGoalButton(
-                          context, appData, currentGoal, theme),
-
-                    // Bottom padding for FAB
-                    const SizedBox(height: 80),
-                  ],
-                ),
-              ),
+                // Bottom padding for FAB
+                const SizedBox(height: 80),
+              ],
             ),
           ),
-
-          // Floating Action Button for adding to goal
-          floatingActionButton: FloatingActionButton.extended(
-            onPressed: () =>
-                _showAddToGoalBottomSheet(context, currentGoal, appData),
-            icon: const Icon(Icons.add_rounded, size: 24),
-            label: const Text('إضافة مدخرات',
-                style: TextStyle(fontWeight: FontWeight.bold)),
-            elevation: 2,
-            backgroundColor: theme.colorScheme.primary,
-            foregroundColor: theme.colorScheme.onPrimary,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-          floatingActionButtonLocation:
-              FloatingActionButtonLocation.centerFloat,
-        );
-      },
+        ),
+      ),
+      // Floating Action Button for adding to goal
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () =>
+            _showAddToGoalBottomSheet(context, currentGoal, goalsProvider),
+        icon: const Icon(Icons.add_rounded, size: 24),
+        label: const Text('إضافة مدخرات',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        elevation: 2,
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
-  // Build the animated progress circle
+  // Build the progress circle
   Widget _buildProgressCircle(
       BuildContext context, Goal goal, double progress, bool isCompleted) {
     return Stack(
@@ -143,22 +124,17 @@ class GoalDetailsScreen extends StatelessWidget {
           ),
         ),
 
-        // Progress circle
+        // Progress circle (static)
         SizedBox(
           width: 200,
           height: 200,
-          child: TweenAnimationBuilder<double>(
-            tween: Tween<double>(begin: 0, end: progress),
-            duration: const Duration(milliseconds: 1200),
-            curve: Curves.easeOutQuart,
-            builder: (context, value, child) => CircularProgressIndicator(
-              value: value,
-              strokeWidth: 14,
-              strokeCap: StrokeCap.round,
-              backgroundColor: goal.color.withOpacity(0.1),
-              valueColor: AlwaysStoppedAnimation<Color>(
-                isCompleted ? Colors.green : goal.color,
-              ),
+          child: CircularProgressIndicator(
+            value: progress,
+            strokeWidth: 14,
+            strokeCap: StrokeCap.round,
+            backgroundColor: goal.color.withOpacity(0.1),
+            valueColor: AlwaysStoppedAnimation<Color>(
+              isCompleted ? Colors.green : goal.color,
             ),
           ),
         ),
@@ -198,44 +174,39 @@ class GoalDetailsScreen extends StatelessWidget {
   }
 
   // Build the stats row with saved, remaining, and total amounts
-  Widget _buildStatsRow(
-      Goal goal, NumberFormat format, ThemeData theme, bool isCompleted) {
-    final remaining = goal.totalAmount - goal.savedAmount;
-
-    return Builder(
-      builder: (context) => Row(
-        children: [
-          // Saved Amount
-          _buildStatCard(
-            context,
-            title: 'المدخر',
-            amount: goal.savedAmount,
-            color: isCompleted ? Colors.green : theme.colorScheme.primary,
-            format: format,
-            icon: Icons.savings_outlined,
-          ),
-
-          // Remaining Amount
-          _buildStatCard(
-            context,
-            title: 'المتبقي',
-            amount: remaining,
-            color: isCompleted ? Colors.grey : Colors.orange,
-            format: format,
-            icon: Icons.timelapse_outlined,
-          ),
-
-          // Total Amount
-          _buildStatCard(
-            context,
-            title: 'الإجمالي',
-            amount: goal.totalAmount,
-            color: theme.colorScheme.primaryContainer,
-            format: format,
-            icon: Icons.flag_outlined,
-          ),
-        ],
-      ),
+  Widget _buildStatsRow(BuildContext context, Goal goal, NumberFormat format,
+      ThemeData theme, bool isCompleted) {
+    final double saved = goal.savedAmount;
+    final double total = goal.totalAmount;
+    final double remaining = (total - saved).clamp(0.0, total);
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildStatCard(
+          context,
+          title: 'المدخر',
+          amount: saved,
+          color: theme.colorScheme.primary,
+          format: format,
+          icon: Icons.savings_outlined,
+        ),
+        _buildStatCard(
+          context,
+          title: 'المتبقي',
+          amount: remaining,
+          color: theme.colorScheme.tertiary,
+          format: format,
+          icon: Icons.hourglass_bottom_rounded,
+        ),
+        _buildStatCard(
+          context,
+          title: 'الهدف',
+          amount: total,
+          color: theme.colorScheme.secondary,
+          format: format,
+          icon: Icons.flag_outlined,
+        ),
+      ],
     );
   }
 
@@ -282,62 +253,18 @@ class GoalDetailsScreen extends StatelessWidget {
   // Build action buttons row
   Widget _buildActionButtons(
     BuildContext context,
-    AppData appData,
+    GoalsProvider goalsProvider,
     Goal goal,
     bool isCompleted,
     ThemeData theme,
   ) {
-    return Row(
-      children: [
-        // Rocket Boost Button
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: () {
-              HapticFeedback.mediumImpact();
-              _showRocketBoostPanel(context);
-            },
-            icon: const Icon(Icons.rocket_launch_rounded, size: 20),
-            label: const Text('دفعة صاروخية'),
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-              backgroundColor: theme.colorScheme.primaryContainer,
-              foregroundColor: theme.colorScheme.onPrimaryContainer,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              elevation: 0,
-            ),
-          ),
-        ),
-
-        const SizedBox(width: 12),
-
-        // Edit Button
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              // TODO: Implement edit goal functionality
-            },
-            icon: const Icon(Icons.edit_outlined, size: 20),
-            label: const Text('تعديل'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              side: BorderSide(color: theme.colorScheme.outlineVariant),
-            ),
-          ),
-        ),
-      ],
-    );
+    return const SizedBox.shrink();
   }
 
   // Build the achieve goal button
   Widget _buildAchieveGoalButton(
     BuildContext context,
-    AppData appData,
+    GoalsProvider goalsProvider,
     Goal goal,
     ThemeData theme,
   ) {
@@ -348,7 +275,7 @@ class GoalDetailsScreen extends StatelessWidget {
         child: FilledButton.icon(
           onPressed: () {
             HapticFeedback.mediumImpact();
-            _showAchieveGoalConfirmation(context, appData, goal);
+            _showAchieveGoalConfirmation(context, goalsProvider, goal);
           },
           icon: const Icon(Icons.celebration_rounded, size: 20),
           label: const Text('احتفل بتحقيق الهدف!'),
@@ -367,7 +294,7 @@ class GoalDetailsScreen extends StatelessWidget {
 
   // Show confirmation dialog for achieving goal
   void _showAchieveGoalConfirmation(
-      BuildContext context, AppData appData, Goal goal) {
+      BuildContext context, GoalsProvider goalsProvider, Goal goal) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -379,8 +306,8 @@ class GoalDetailsScreen extends StatelessWidget {
             child: const Text('إلغاء'),
           ),
           FilledButton(
-            onPressed: () {
-              appData.achieveGoal(goal);
+            onPressed: () async {
+              await goalsProvider.deleteGoal(goal.id);
               HapticFeedback.mediumImpact();
               Navigator.pop(context);
               Navigator.pop(context); // Go back to goals list
@@ -406,7 +333,7 @@ class GoalDetailsScreen extends StatelessWidget {
 
   // Show bottom sheet for adding to goal
   void _showAddToGoalBottomSheet(
-      BuildContext context, Goal goal, AppData appData) {
+      BuildContext context, Goal goal, GoalsProvider goalsProvider) {
     final amountController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
@@ -475,7 +402,8 @@ class GoalDetailsScreen extends StatelessWidget {
                         final amount =
                             double.tryParse(amountController.text) ?? 0;
                         if (amount > 0) {
-                          appData.addSavingsToGoal(goal, amount);
+                          // TODO: Implement add savings to goal using provider/database
+                          // goalsProvider.addSavingsToGoal(goal, amount);
                           HapticFeedback.mediumImpact();
                           Navigator.pop(context);
 

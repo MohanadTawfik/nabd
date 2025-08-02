@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:nabd/data/app_data.dart';
+import 'package:nabd/features/transactions/transactions_provider.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:provider/provider.dart'; // حزمة لتنسيق الأرقام
 
@@ -29,13 +29,12 @@ class _ExpensesByCategoryCardState extends State<ExpensesByCategoryCard> {
   Widget build(BuildContext context) {
     final numberFormat = NumberFormat("#,##0", "en_US");
 
-    return Consumer<AppData>(
-      builder: (context, appData, child) {
+    return Consumer<TransactionsProvider>(
+      builder: (context, txProvider, child) {
         final expenseMap = <String, double>{};
-        for (var t in appData.transactions
+        for (var t in txProvider.transactions
             .where((t) => t.type == TransactionType.expense)) {
-          expenseMap.update(t.category.name, 
-          (value) => value + t.amount,
+          expenseMap.update(t.category.name, (value) => value + t.amount,
               ifAbsent: () => t.amount);
         }
         final expensesData = expenseMap.entries.toList()

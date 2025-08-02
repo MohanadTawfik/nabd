@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nabd/utils/animation_config.dart';
 
 class StoryProgressBar extends StatelessWidget {
   final int pageCount;
@@ -14,6 +15,27 @@ class StoryProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // If animations are disabled, show a simplified version
+    if (!AnimationConfig.animationsEnabled) {
+      return Row(
+        children: List.generate(
+          pageCount,
+          (index) => Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2.0),
+              child: LinearProgressIndicator(
+                value: (index <= currentPageIndex) ? 1.0 : 0.0,
+                backgroundColor: Colors.white.withOpacity(0.3),
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                minHeight: 3.0,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    
+    // With animations enabled
     return Row(
       children: List.generate(
         pageCount,

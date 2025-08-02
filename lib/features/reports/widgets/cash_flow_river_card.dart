@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:nabd/data/app_data.dart';
+import 'package:nabd/features/transactions/transactions_provider.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
+import 'package:nabd/utils/animation_config.dart';
 import 'package:provider/provider.dart';
 import 'dart:ui' as ui;
 
@@ -23,24 +24,36 @@ class _CashFlowRiverCardState extends State<CashFlowRiverCard>
     // 2. إعداد متحكم الأنيميشن ليعمل عند ظهور الويدجت
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: AnimationConfig.standardDuration,
     );
-    _animationController.forward();
+
+    if (AnimationConfig.complexAnimationsEnabled) {
+      _animationController.forward();
+    } else {
+      _animationController.value = 1.0; // Skip animation
+    }
   }
 
   @override
   void dispose() {
+    // First stop any ongoing animations
+    _animationController.stop();
+    // Set animation value to 1.0 to prevent any further animations
+    _animationController.value = 1.0;
+    // Then dispose the controller
     _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<AppData>(
-      builder: (context, appData, child) {
-        final totalIncome = appData.totalIncome;
+    return Consumer<TransactionsProvider>(
+      builder: (context, txProvider, child) {
+        final totalIncome = txProvider.transactions
+            .where((t) => t.type == TransactionType.income)
+            .fold<double>(0, (sum, t) => sum + t.amount);
         final expenseMap = <String, double>{};
-        for (var t in appData.transactions
+        for (var t in txProvider.transactions
             .where((t) => t.type == TransactionType.expense)) {
           expenseMap.update(t.category.name, (value) => value + t.amount,
               ifAbsent: () => t.amount);
@@ -82,19 +95,32 @@ class _CashFlowRiverCardState extends State<CashFlowRiverCard>
                           Theme.of(context).primaryColor),
                       Expanded(
                         // 3. استخدام AnimatedBuilder لإعادة رسم النهر مع الأنيميشن
-                        child: AnimatedBuilder(
-                          animation: _animationController,
-                          builder: (context, child) {
-                            return CustomPaint(
-                              painter: RiverPainter(
-                                expenses: expenses,
-                                totalIncome: totalIncome,
-                                theme: Theme.of(context),
-                                animationProgress: _animationController.value,
+                        child: AnimationConfig.complexAnimationsEnabled
+                            ? AnimatedBuilder(
+                                animation: _animationController,
+                                // Don't use child parameter here as we can't modify painter property
+                                builder: (context, _) {
+                                  // Create a new CustomPaint with the current animation value
+                                  return CustomPaint(
+                                    painter: RiverPainter(
+                                      expenses: expenses,
+                                      totalIncome: totalIncome,
+                                      theme: Theme.of(context),
+                                      animationProgress:
+                                          _animationController.value,
+                                    ),
+                                  );
+                                },
+                              )
+                            : CustomPaint(
+                                painter: RiverPainter(
+                                  expenses: expenses,
+                                  totalIncome: totalIncome,
+                                  theme: Theme.of(context),
+                                  animationProgress:
+                                      1.0, // Full progress when animations disabled
+                                ),
                               ),
-                            );
-                          },
-                        ),
                       ),
                       Column(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,

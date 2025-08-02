@@ -22,14 +22,11 @@ class CategoriesPanal extends StatelessWidget {
   Widget build(BuildContext context) {
     final isSelected = widget.selectedCategory?.id == category.id;
     final theme = Theme.of(context);
-    //final isDark = theme.brightness == Brightness.dark; // Not used here
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+    return Container(
       margin: const EdgeInsets.all(2),
       child: Material(
-        color:
-            isSelected ? category.color.withOpacity(0.2) : Colors.transparent,
+        color: isSelected ? category.color.withOpacity(0.2) : Colors.transparent,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: () => Navigator.pop(context, category),
@@ -41,8 +38,7 @@ class CategoriesPanal extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
+                Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: isSelected
@@ -61,20 +57,17 @@ class CategoriesPanal extends StatelessWidget {
                   ),
                   child: Icon(
                     category.icon,
-                    color: category.color, // لون الأيقونة مباشرة بلون الفئة
+                    color: category.color,
                     size: 22,
                   ),
                 ),
                 const SizedBox(height: 8),
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 200),
+                DefaultTextStyle(
                   style: theme.textTheme.bodySmall!.copyWith(
                     color: isSelected
-                        ? category.color // النص بلون الفئة إذا كانت مختارة
-                        : theme.colorScheme.onSurface
-                            .withOpacity(0.8), // لون نص واضح للغير مختار
-                    fontWeight:
-                        isSelected ? FontWeight.bold : FontWeight.normal,
+                        ? category.color
+                        : theme.colorScheme.onSurface.withOpacity(0.8),
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -388,54 +381,50 @@ class CategorySelectorBottomSheetState
                   child: ValueListenableBuilder<List<Category>>(
                     valueListenable: _filteredCategories,
                     builder: (context, categories, _) {
-                      return AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 200),
-                        child: categories.isEmpty
-                            ? Center(
-                                key: const ValueKey('no_categories_found'),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(24.0),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.search_off_rounded,
-                                        size: 48,
-                                        color: theme.hintColor.withOpacity(0.5),
+                      return categories.isEmpty
+                          ? Center(
+                              key: const ValueKey('no_categories_found'),
+                              child: Padding(
+                                padding: const EdgeInsets.all(24.0),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.search_off_rounded,
+                                      size: 48,
+                                      color: theme.hintColor.withOpacity(0.5),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'لا توجد فئات تطابق البحث',
+                                      style: theme.textTheme.bodyLarge?.copyWith(
+                                        color: theme.hintColor,
                                       ),
-                                      const SizedBox(height: 16),
-                                      Text(
-                                        'لا توجد فئات تطابق البحث',
-                                        style:
-                                            theme.textTheme.bodyLarge?.copyWith(
-                                          color: theme.hintColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                 ),
-                              )
-                            : GridView.builder(
-                                key: const ValueKey('categories_grid'),
-                                shrinkWrap: true,
-                                physics: const BouncingScrollPhysics(),
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                  crossAxisCount: 4,
-                                  childAspectRatio: 0.9,
-                                  crossAxisSpacing: 12,
-                                  mainAxisSpacing: 12,
-                                ),
-                                itemCount: categories.length,
-                                itemBuilder: (context, index) {
-                                  final category = categories[index];
-                                  return CategoriesPanal(
-                                      widget: widget,
-                                      context: context,
-                                      category: category);
-                                },
                               ),
-                      );
+                            )
+                          : GridView.builder(
+                              key: const ValueKey('categories_grid'),
+                              shrinkWrap: true,
+                              physics: const BouncingScrollPhysics(),
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 4,
+                                childAspectRatio: 0.9,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                              ),
+                              itemCount: categories.length,
+                              itemBuilder: (context, index) {
+                                final category = categories[index];
+                                return CategoriesPanal(
+                                    widget: widget,
+                                    context: context,
+                                    category: category);
+                              },
+                            );
                     },
                   ),
                 ),

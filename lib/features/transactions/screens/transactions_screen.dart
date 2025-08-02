@@ -1,14 +1,16 @@
 // transactions_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:nabd/data/app_data.dart';
+// Removed unused import
 import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:nabd/features/transactions/screens/add_transaction_screen.dart';
 import 'package:nabd/features/transactions/screens/transaction_detail_screen.dart';
 import 'package:nabd/features/transactions/widgets/transaction_list_item.dart';
 import 'package:nabd/widgets/glass_background.dart';
+import 'package:nabd/widgets/empty_state.dart';
 import 'package:provider/provider.dart';
 import 'package:nabd/theme/app_colors.dart'; // إضافة استيراد AppColors
+import 'package:nabd/features/transactions/transactions_provider.dart';
 
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
@@ -65,13 +67,17 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-
-    return Consumer<AppData>(
-      builder: (context, appData, child) {
-        List<Transaction> transactions = List.from(appData.transactions);
+    return Consumer<TransactionsProvider>(
+      builder: (context, provider, child) {
+        if (provider.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (provider.error != null) {
+          return Center(child: Text(provider.error!));
+        }
+        List<Transaction> transactions = List.from(provider.transactions);
         transactions = _sortTransactions(transactions);
         transactions = _filterTransactions(transactions);
-
         return Scaffold(
           extendBodyBehindAppBar: true,
           backgroundColor: Colors.transparent, // تم تعيينها شفافة
@@ -166,29 +172,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 ),
                 Expanded(
                   child: transactions.isEmpty
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.receipt_long,
-                                size: 64,
-                                color: isDark
-                                    ? Colors.grey[700]
-                                    : Colors.grey[400],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'لا توجد معاملات',
-                                style: theme.textTheme.headlineSmall?.copyWith(
-                                  // استخدام headlineSmall
-                                  color: isDark
-                                      ? Colors.grey[500]
-                                      : Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
+                      ? const EmptyState(
+                          icon: Icons.receipt_long,
+                          title: "",
+                          message: 'لا توجد معاملات',
                         )
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(
@@ -263,8 +250,7 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     final textTheme = theme.textTheme;
     final isDark = theme.brightness == Brightness.dark;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+    return Container(
       margin: const EdgeInsets.symmetric(horizontal: 4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
@@ -280,10 +266,10 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       ),
       child: Material(
         color: isSelected
-            ? colorScheme.primary.withOpacity(0.2) // شفافية أعلى للزر المحدد
+            ? colorScheme.primary.withOpacity(0.2)
             : (isDark
-                ? AppColors.grey800.withOpacity(0.3) // لون رمادي داكن شفاف
-                : AppColors.grey200.withOpacity(0.5)), // لون رمادي فاتح شفاف
+                ? AppColors.grey800.withOpacity(0.3)
+                : AppColors.grey200.withOpacity(0.5)),
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -305,26 +291,23 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                 Text(
                   label,
                   style: textTheme.labelLarge?.copyWith(
-                    // استخدام labelLarge
                     color: isSelected
-                        ? colorScheme.onPrimary // لون النص على primary
+                        ? colorScheme.onPrimary
                         : (isDark
-                            ? AppColors.textDark
-                                .withOpacity(0.7) // لون نص أقل حدة
-                            : AppColors.textPrimary
-                                .withOpacity(0.8)), // لون نص أقل حدة
+                            ? AppColors.textDark.withOpacity(0.7)
+                            : AppColors.textPrimary.withOpacity(0.8)),
                     fontWeight:
                         isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
-                if (isSelected) ...[
-                  const SizedBox(width: 6),
+                if (isSelected)
                   Icon(
-                    _sortAscending ? Icons.arrow_upward : Icons.arrow_downward,
+                    _sortAscending
+                        ? Icons.arrow_upward_rounded
+                        : Icons.arrow_downward_rounded,
                     size: 16,
-                    color: colorScheme.onPrimary, // لون الأيقونة على primary
+                    color: colorScheme.onPrimary,
                   ),
-                ],
               ],
             ),
           ),

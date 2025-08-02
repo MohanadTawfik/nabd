@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nabd/utils/animation_config.dart';
 
 class StoryPage extends StatefulWidget {
   final String title;
@@ -26,18 +27,28 @@ class _StoryPageState extends State<StoryPage>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 800));
+        vsync: this, duration: AnimationConfig.standardDuration);
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(parent: _animationController, curve: Curves.easeOut));
     _slideAnimation =
         Tween<Offset>(begin: const Offset(0, 0.2), end: Offset.zero).animate(
             CurvedAnimation(
                 parent: _animationController, curve: Curves.easeOut));
-    _animationController.forward();
+    
+    if (AnimationConfig.complexAnimationsEnabled) {
+      _animationController.forward();
+    } else {
+      _animationController.value = 1.0; // Skip animation
+    }
   }
 
   @override
   void dispose() {
+    // First stop any ongoing animations
+    _animationController.stop();
+    // Set animation value to 1.0 to prevent any further animations
+    _animationController.value = 1.0;
+    // Then dispose the controller
     _animationController.dispose();
     super.dispose();
   }
@@ -49,27 +60,36 @@ class _StoryPageState extends State<StoryPage>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          FadeTransition(
-            opacity: _fadeAnimation,
-            child: SlideTransition(
-              position: _slideAnimation,
-              child: Column(
-                children: [
-                  Icon(widget.icon, size: 80, color: Colors.white70),
-                  const SizedBox(height: 16),
-                  Text(widget.title,
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 40),
-                  widget.content,
-                ],
+          if (AnimationConfig.complexAnimationsEnabled)
+            // With animations
+            FadeTransition(
+              opacity: _fadeAnimation,
+              child: SlideTransition(
+                position: _slideAnimation,
+                child: _buildContent(),
               ),
-            ),
-          ),
+            )
+          else
+            // Without animations
+            _buildContent(),
         ],
       ),
+    );
+  }
+
+  Widget _buildContent() {
+    return Column(
+      children: [
+        Icon(widget.icon, size: 80, color: Colors.white70),
+        const SizedBox(height: 16),
+        Text(widget.title,
+            style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold)),
+        const SizedBox(height: 40),
+        widget.content,
+      ],
     );
   }
 }

@@ -28,8 +28,10 @@ class AppColors {
   static const Color dividerDark = Colors.white24;
 
   // Transaction Colors
-  static const Color incomeColor = Color(0xff4caf50); // Green
-  static const Color expenseColor = Color(0xfff44336); // Red
+  static const Color income = Color(0xff4caf50); // Green
+  static const Color expense = Color(0xfff44336); // Red
+  static const Color incomeColor = income; // Alias for backward compatibility
+  static const Color expenseColor = expense; // Alias for backward compatibility
 
   // Other common colors
   static const Color accentColor = Color(0xFFFFDAB9); // Pastel Peach

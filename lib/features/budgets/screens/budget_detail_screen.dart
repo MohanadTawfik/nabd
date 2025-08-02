@@ -1,9 +1,8 @@
+import 'package:nabd/features/budgets/budgets_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/budgets/models/budget_model.dart';
 import 'package:nabd/features/budgets/screens/add_budget_screen.dart';
-import 'package:nabd/features/categories/models/category_model.dart';
 import 'package:nabd/widgets/glass_background.dart';
 import 'package:nabd/widgets/glass_card.dart';
 import 'package:provider/provider.dart';
@@ -33,10 +32,6 @@ class BudgetDetailScreen extends StatelessWidget {
     final now = DateTime.now();
     final startDate = budget.startDate;
     final endDate = budget.endDate;
-
-    if (startDate == null || endDate == null) {
-      return ('غير محددة', Colors.grey);
-    }
     if (now.isBefore(startDate)) {
       return ('لم تبدأ بعد', Colors.blueGrey);
     }
@@ -70,8 +65,10 @@ class BudgetDetailScreen extends StatelessWidget {
             child: const Text('إلغاء'),
           ),
           TextButton(
-            onPressed: () {
-              Provider.of<AppData>(context, listen: false).deleteBudget(budget);
+            onPressed: () async {
+              final budgetsProvider =
+                  Provider.of<BudgetsProvider>(context, listen: false);
+              await budgetsProvider.deleteBudget(budget.id);
               Navigator.of(dialogCtx).pop(); // إغلاق مربع الحوار
               Navigator.of(context).pop(); // العودة من شاشة التفاصيل
             },
@@ -97,192 +94,161 @@ class BudgetDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // **التحسين:** استخدام Consumer لجلب البيانات وتحديثها تلقائيًا
-    return Consumer<AppData>(
-      builder: (context, appData, child) {
-        // البحث عن أحدث نسخة من الميزانية
-        final budget = appData.budgets.firstWhere(
-          (b) => b.id == budgetId,
-          // إذا تم حذف الميزانية، يتم إنشاء نسخة فارغة مؤقتًا لمنع الانهيار
-          orElse: () => Budget(
-            id: budgetId,
-            totalAmount: 0,
-            spentAmount: 0,
+    final budgetsProvider = Provider.of<BudgetsProvider>(context);
+    final budget = budgetsProvider.budgets.firstWhere(
+      (b) => b.id == budgetId,
+      orElse: () => Budget(id: budgetId, totalAmount: 0, spentAmount: 0),
+    );
+
+    final progress =
+        budget.totalAmount > 0 ? budget.spentAmount / budget.totalAmount : 0.0;
+    final remaining = budget.totalAmount - budget.spentAmount;
+    final (statusText, statusColor) = _getBudgetStatus(budget, progress, theme);
+    final categoryColor = budget.category?.color ?? statusColor;
+
+    int remainingDays = 0;
+    if (DateTime.now().isBefore(budget.endDate)) {
+      remainingDays = budget.endDate.difference(DateTime.now()).inDays + 1;
+    }
+    final dailyAvg =
+        (remaining > 0 && remainingDays > 0) ? remaining / remainingDays : 0.0;
+
+    return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
+      appBar: AppBar(
+        title: const Text('تفاصيل الميزانية'),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: () => _navigateToEditScreen(context, budget),
+            tooltip: 'تعديل',
           ),
-        );
-
-        // إذا كانت الميزانية محذوفة بالفعل، أغلق الشاشة
-        if (budget.displayName == 'محذوفة') {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (context.mounted) Navigator.of(context).pop();
-          });
-          return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
-        }
-
-        // حساب المتغيرات
-        final progress = (budget.totalAmount ?? 0) > 0
-            ? (budget.spentAmount ?? 0) / (budget.totalAmount ?? 1)
-            : 0.0;
-        final remaining = (budget.totalAmount ?? 0) - (budget.spentAmount ?? 0);
-        final (statusText, statusColor) =
-            _getBudgetStatus(budget, progress, theme);
-        final categoryColor = budget.category?.color ?? statusColor;
-
-        int remainingDays = 0;
-        if (budget.endDate != null &&
-            DateTime.now().isBefore(budget.endDate!)) {
-          remainingDays = budget.endDate!.difference(DateTime.now()).inDays + 1;
-        }
-        final dailyAvg = (remaining > 0 && remainingDays > 0)
-            ? remaining / remainingDays
-            : 0.0;
-
-        return Scaffold(
-          extendBodyBehindAppBar: true,
-          backgroundColor: Colors.transparent,
-          appBar: AppBar(
-            title: const Text('تفاصيل الميزانية'),
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            centerTitle: false,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.edit_outlined),
-                onPressed: () => _navigateToEditScreen(context, budget),
-                tooltip: 'تعديل',
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete_outline),
-                onPressed: () => _showDeleteConfirmation(context, budget),
-                tooltip: 'حذف',
-              ),
-              const SizedBox(width: 8),
-            ],
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () => _showDeleteConfirmation(context, budget),
+            tooltip: 'حذف',
           ),
-          body: GlassBackground(
-            child: Column(
-              children: [
-                // Spacer for AppBar under GlassBackground.SafeArea
-                SizedBox(
-                  height: AppBar().preferredSize.height *
-                          0.5 + // مثلاً 50% من ارتفاع AppBar
-                      MediaQuery.of(context).padding.top *
-                          0.5, // مثلاً 70% من padding الأعلى
-                ),
-                // --- بطاقة العرض الرئيسية ---
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: GlassCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          SizedBox(
-                            width: 100,
-                            height: 100,
-                            child: Stack(
-                              fit: StackFit.expand,
-                              alignment: Alignment.center,
-                              children: [
-                                CircularProgressIndicator(
-                                    value: 1,
-                                    strokeWidth: 9,
-                                    color: categoryColor.withOpacity(0.2)),
-                                CircularProgressIndicator(
-                                    value: progress,
-                                    strokeWidth: 9,
-                                    color: categoryColor,
-                                    strokeCap: StrokeCap.round),
-                                Center(
-                                  child: Icon(
-                                      budget.category?.icon ?? Icons.wallet,
-                                      color: categoryColor,
-                                      size: 40),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(budget.displayName ?? 'بلا اسم',
-                                    style: theme.textTheme.headlineSmall
-                                        ?.copyWith(
-                                            fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 8),
-                                Text('المتبقي: ${_formatCurrency(remaining)}',
-                                    style: theme.textTheme.titleMedium),
-                                Text(
-                                    'المصروف: ${_formatCurrency(budget.spentAmount ?? 0)}',
-                                    style: theme.textTheme.bodyMedium),
-                              ],
-                            ),
-                          )
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // --- قائمة التفاصيل ---
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Column(
-                      children: [
-                        _buildDetailRow(theme, Icons.info_outline,
-                            budget.displayName ?? 'محذوفة', 'الحالة',
-                            valueWidget: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                  color: statusColor,
-                                  borderRadius: BorderRadius.circular(8)),
-                              child: Text(statusText,
-                                  style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold)),
-                            )),
-                        _buildDetailRow(
-                            theme,
-                            Icons.account_balance_wallet_outlined,
-                            'مبلغ الميزانية',
-                            _formatCurrency(budget.totalAmount ?? 0)),
-                        _buildDetailRow(
-                            theme,
-                            Icons.show_chart_rounded,
-                            'نسبة الصرف',
-                            '${(progress * 100).toStringAsFixed(1)}%'),
-                        if (dailyAvg > 0)
-                          _buildDetailRow(theme, Icons.commit_rounded,
-                              'متوسط الصرف اليومي', _formatCurrency(dailyAvg)),
-                        _buildDetailRow(
-                            theme,
-                            Icons.date_range_outlined,
-                            'تاريخ البداية',
-                            DateFormat('d MMMM yyyy', 'ar')
-                                .format(budget.startDate!)),
-                        _buildDetailRow(
-                            theme,
-                            Icons.flag_outlined,
-                            'تاريخ النهاية',
-                            DateFormat('d MMMM yyyy', 'ar')
-                                .format(budget.endDate!)),
-                        if (remainingDays > 0)
-                          _buildDetailRow(theme, Icons.hourglass_bottom_rounded,
-                              'الأيام المتبقية', '$remainingDays يوم'),
-                      ],
-                    ),
-                  ),
-                )
-              ],
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: GlassBackground(
+        child: Column(
+          children: [
+            // Spacer for AppBar under GlassBackground.SafeArea
+            SizedBox(
+              height: AppBar().preferredSize.height *
+                      0.5 + // مثلاً 50% من ارتفاع AppBar
+                  MediaQuery.of(context).padding.top *
+                      0.5, // مثلاً 70% من padding الأعلى
             ),
-          ),
-        );
-      },
+            // --- بطاقة العرض الرئيسية ---
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: GlassCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 100,
+                        height: 100,
+                        child: Stack(
+                          fit: StackFit.expand,
+                          alignment: Alignment.center,
+                          children: [
+                            CircularProgressIndicator(
+                                value: 1,
+                                strokeWidth: 9,
+                                color: categoryColor.withOpacity(0.2)),
+                            CircularProgressIndicator(
+                                value: progress,
+                                strokeWidth: 9,
+                                color: categoryColor,
+                                strokeCap: StrokeCap.round),
+                            Center(
+                              child: Icon(budget.category?.icon ?? Icons.wallet,
+                                  color: categoryColor, size: 40),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(budget.displayName,
+                                style: theme.textTheme.headlineSmall
+                                    ?.copyWith(fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            Text('المتبقي: ${_formatCurrency(remaining)}',
+                                style: theme.textTheme.titleMedium),
+                            Text(
+                                'المصروف: ${_formatCurrency(budget.spentAmount)}',
+                                style: theme.textTheme.bodyMedium),
+                          ],
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // --- قائمة التفاصيل ---
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                child: Column(
+                  children: [
+                    _buildDetailRow(
+                        theme, Icons.info_outline, budget.displayName, 'الحالة',
+                        valueWidget: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                              color: statusColor,
+                              borderRadius: BorderRadius.circular(8)),
+                          child: Text(statusText,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold)),
+                        )),
+                    _buildDetailRow(
+                        theme,
+                        Icons.account_balance_wallet_outlined,
+                        'مبلغ الميزانية',
+                        _formatCurrency(budget.totalAmount)),
+                    _buildDetailRow(
+                        theme,
+                        Icons.show_chart_rounded,
+                        'نسبة الصرف',
+                        '${(progress * 100).toStringAsFixed(1)}%'),
+                    if (dailyAvg > 0)
+                      _buildDetailRow(theme, Icons.commit_rounded,
+                          'متوسط الصرف اليومي', _formatCurrency(dailyAvg)),
+                    _buildDetailRow(
+                        theme,
+                        Icons.date_range_outlined,
+                        'تاريخ البداية',
+                        DateFormat('d MMMM yyyy', 'ar')
+                            .format(budget.startDate)),
+                    _buildDetailRow(theme, Icons.flag_outlined, 'تاريخ النهاية',
+                        DateFormat('d MMMM yyyy', 'ar').format(budget.endDate)),
+                    if (remainingDays > 0)
+                      _buildDetailRow(theme, Icons.hourglass_bottom_rounded,
+                          'الأيام المتبقية', '$remainingDays يوم'),
+                  ],
+                ),
+              ),
+            )
+          ],
+        ),
+      ),
     );
   }
 

@@ -7,6 +7,8 @@ class PrimaryButton extends StatelessWidget {
   final VoidCallback onPressed;
   final double height;
   final double borderRadius;
+  final bool isLoading;
+  final IconData? icon;
 
   const PrimaryButton({
     Key? key,
@@ -14,6 +16,8 @@ class PrimaryButton extends StatelessWidget {
     required this.onPressed,
     this.height = 48.0,
     this.borderRadius = 24.0,
+    this.isLoading = false,
+    this.icon,
   }) : super(key: key);
 
   @override
@@ -36,15 +40,34 @@ class PrimaryButton extends StatelessWidget {
           ),
           alignment: Alignment.center,
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
-          child: Text(
-            text,
-            style: const TextStyle(
-              fontFamily: 'Cairo',
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: Colors.white,
-            ),
-          ),
+          child: isLoading
+              ? const SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    strokeWidth: 2.0,
+                  ),
+                )
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (icon != null) ...[  
+                      Icon(icon, color: Colors.white, size: 20),
+                      const SizedBox(width: 8),
+                    ],
+                    Text(
+                      text,
+                      style: const TextStyle(
+                        fontFamily: 'Cairo',
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
         ),
       ),
     );

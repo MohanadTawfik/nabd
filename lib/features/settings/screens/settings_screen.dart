@@ -1,8 +1,8 @@
+import 'package:nabd/widgets/modern_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:nabd/features/goals/screens/goals_screen.dart';
-import 'package:provider/provider.dart';
-import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/categories/screens/manage_categories_screen.dart';
+import 'package:nabd/services/service_locator.dart';
 import '../widgets/profile_header.dart';
 import '../widgets/settings_section.dart';
 import '../widgets/settings_item.dart';
@@ -13,17 +13,12 @@ class SettingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final appData = Provider.of<AppData>(context);
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('الإعدادات',
-            style: TextStyle(fontWeight: FontWeight.w600)),
-        centerTitle: true,
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: theme.colorScheme.onSurface,
+      appBar: const ModernAppBar(
+        greeting: 'الإعدادات',
+        actions: [],
       ),
       extendBodyBehindAppBar: true,
       body: SafeArea(
@@ -42,23 +37,27 @@ class SettingsScreen extends StatelessWidget {
               const SizedBox(height: 8),
 
               // Account Section
-              // SettingsSection(
-              //   title: 'الحساب',
-              //   items: [
-              //     SettingsItem(
-              //       icon: Icons.person_outline_rounded,
-              //       title: 'الملف الشخصي',
-              //       subtitle: 'تعديل بياناتك الشخصية',
-              //       onTap: () {},
-              //     ),
-              //     SettingsItem(
-              //       icon: Icons.lock_outline_rounded,
-              //       title: 'كلمة المرور',
-              //       subtitle: 'تغيير كلمة المرور',
-              //       onTap: () {},
-              //     ),
-              //   ],
-              // ),
+              SettingsSection(
+                title: 'الحساب',
+                items: [
+                  SettingsItem(
+                    icon: Icons.person_outline_rounded,
+                    title: 'الملف الشخصي',
+                    subtitle: 'تعديل بياناتك الشخصية',
+                    onTap: () {
+                      Navigator.pushNamed(context, '/profile');
+                    },
+                  ),
+                  SettingsItem(
+                    icon: Icons.lock_outline_rounded,
+                    title: 'كلمة المرور',
+                    subtitle: 'تغيير كلمة المرور',
+                    onTap: () {
+                      Navigator.pushNamed(context, '/change_password');
+                    },
+                  ),
+                ],
+              ),
 
               // Financial Settings Section
               SettingsSection(
@@ -122,18 +121,14 @@ class SettingsScreen extends StatelessWidget {
                     trailing: Switch(
                       value: isDark,
                       onChanged: (value) {
-                        appData.changeTheme(
-                          value ? ThemeMode.dark : ThemeMode.light,
-                        );
+                        // TODO: Implement theme switching using Provider or another state management solution
                       },
                       activeColor: theme.colorScheme.primary,
                       activeTrackColor:
                           theme.colorScheme.primary.withOpacity(0.5),
                     ),
                     onTap: () {
-                      appData.changeTheme(
-                        isDark ? ThemeMode.light : ThemeMode.dark,
-                      );
+                      // TODO: Implement theme switching using Provider or another state management solution
                     },
                   ),
                   SettingsItem(
@@ -165,8 +160,16 @@ class SettingsScreen extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8.0, vertical: 16.0),
                 child: OutlinedButton.icon(
-                  onPressed: () {
+                  onPressed: () async {
                     // Handle sign out
+                    final authService = serviceLocator.authService;
+                    await authService.logout();
+
+                    if (!context.mounted) return;
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      '/login',
+                      (route) => false,
+                    );
                   },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red,

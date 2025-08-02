@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:nabd/features/goals/models/goal_model.dart';
 import 'package:nabd/widgets/glass_card.dart';
+import 'package:nabd/utils/animation_config.dart';
 
 /// A modern, animated card widget that displays a savings goal with progress.
 /// Features glassmorphic design, smooth animations, and interactive elements.
@@ -22,50 +23,8 @@ class GoalCardWidget extends StatefulWidget {
   State<GoalCardWidget> createState() => _GoalCardWidgetState();
 }
 
-class _GoalCardWidgetState extends State<GoalCardWidget>
-    with SingleTickerProviderStateMixin {
-  static const _kAnimationDuration = Duration(milliseconds: 300);
-  late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
+class _GoalCardWidgetState extends State<GoalCardWidget> {
   bool _isPressed = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: _kAnimationDuration,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.98).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _handleTapDown(_) {
-    setState(() => _isPressed = true);
-    _controller.forward();
-    HapticFeedback.lightImpact();
-  }
-
-  void _handleTapUp(_) {
-    setState(() => _isPressed = false);
-    _controller.reverse();
-    widget.onTap?.call();
-  }
-
-  void _handleTapCancel() {
-    setState(() => _isPressed = false);
-    _controller.reverse();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,44 +36,26 @@ class _GoalCardWidgetState extends State<GoalCardWidget>
     final isCompleted = progress >= 1.0;
 
     return GestureDetector(
-      onTapDown: _handleTapDown,
-      onTapUp: _handleTapUp,
-      onTapCancel: _handleTapCancel,
+      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapUp: (_) {
+        setState(() => _isPressed = false);
+        widget.onTap?.call();
+      },
+      onTapCancel: () => setState(() => _isPressed = false),
       onLongPress: widget.onLongPress,
       behavior: HitTestBehavior.opaque,
-      child: AnimatedBuilder(
-        animation: _controller,
-        builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: Opacity(
-              opacity: _isPressed ? 0.9 : 1.0,
-              child: child,
-            ),
-          );
-        },
+      child: Opacity(
+        opacity: _isPressed ? 0.9 : 1.0,
         child: GlassCard(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
+          borderRadius: 20,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header with icon and title
+              // Title and status
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: widget.goal.color.withOpacity(0.1),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      widget.goal.icon,
-                      color: widget.goal.color,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: Text(
                       widget.goal.name,
@@ -168,10 +109,7 @@ class _GoalCardWidgetState extends State<GoalCardWidget>
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
-                  // Progress fill
-                  AnimatedFractionallySizedBox(
-                    duration: const Duration(milliseconds: 800),
-                    curve: Curves.easeOutQuart,
+                  FractionallySizedBox(
                     widthFactor: progress,
                     child: Container(
                       height: 8,

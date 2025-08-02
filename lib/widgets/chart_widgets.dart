@@ -1,6 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:syncfusion_flutter_charts/charts.dart'
+    show
+        SfCartesianChart,
+        SfCircularChart,
+        CartesianSeries,
+        PieSeries,
+        BarSeries,
+        CategoryAxis,
+        MajorGridLines,
+        DataLabelSettings;
 import 'package:nabd/theme/app_colors.dart';
+import 'package:nabd/utils/animation_config.dart';
+
+// These widgets provide reusable chart components with proper animation handling
+// to prevent the "A disposed RenderObject was mutated" error
 
 /// Model for chart data points.
 class ChartData {
@@ -26,6 +39,11 @@ class PieChartWidget extends StatelessWidget {
           pointColorMapper: (d, _) => d.color,
           dataLabelSettings: const DataLabelSettings(isVisible: true),
           radius: '80%',
+          // Set animation duration to 0 when animations are disabled
+          // This prevents the "A disposed RenderObject was mutated" error
+          animationDuration: AnimationConfig.complexAnimationsEnabled ? 500 : 0,
+          // Ensure animation is completely disabled when not needed
+          animationDelay: 0,
         )
       ],
     );
@@ -43,7 +61,7 @@ class BarChartWidget extends StatelessWidget {
       primaryXAxis: CategoryAxis(
         majorGridLines: const MajorGridLines(width: 0),
       ),
-      series: <BarSeries<ChartData, String>>[
+      series: <CartesianSeries<ChartData, String>>[
         BarSeries<ChartData, String>(
           dataSource: data,
           xValueMapper: (d, _) => d.x,
@@ -51,6 +69,11 @@ class BarChartWidget extends StatelessWidget {
           color: AppColors.primaryColor,
           width: 0.6,
           dataLabelSettings: const DataLabelSettings(isVisible: true),
+          // Set animation duration to 0 when animations are disabled
+          // This prevents the "A disposed RenderObject was mutated" error
+          animationDuration: AnimationConfig.complexAnimationsEnabled ? 500 : 0,
+          // Ensure animation is completely disabled when not needed
+          animationDelay: 0,
         )
       ],
     );

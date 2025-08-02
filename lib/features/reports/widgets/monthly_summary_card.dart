@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:nabd/data/app_data.dart';
+import 'package:nabd/features/transactions/transactions_provider.dart';
+import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:provider/provider.dart';
 
 class MonthlySummaryCard extends StatelessWidget {
@@ -8,9 +9,16 @@ class MonthlySummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. نستخدم Consumer للاستماع للتغيرات في AppData
-    return Consumer<AppData>(
-      builder: (context, appData, child) {
+    // Listen to TransactionsProvider for all transaction data
+    return Consumer<TransactionsProvider>(
+      builder: (context, txProvider, child) {
+        final income = txProvider.transactions
+            .where((t) => t.type == TransactionType.income)
+            .fold<double>(0, (sum, t) => sum + t.amount);
+        final expense = txProvider.transactions
+            .where((t) => t.type == TransactionType.expense)
+            .fold<double>(0, (sum, t) => sum + t.amount);
+        final balance = income - expense;
         return Card(
           color: const Color(0xff161b22),
           shape:
@@ -20,13 +28,9 @@ class MonthlySummaryCard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                // 2. عرض البيانات الحقيقية من مركز البيانات
-                _buildSummaryItem(
-                    'الدخل', appData.totalIncome, Colors.green.shade400),
-                _buildSummaryItem(
-                    'المصروف', appData.totalExpense, Colors.red.shade400),
-                _buildSummaryItem(
-                    'الصافي', appData.currentBalance, Colors.blue.shade400),
+                _buildSummaryItem('الدخل', income, Colors.green.shade400),
+                _buildSummaryItem('المصروف', expense, Colors.red.shade400),
+                _buildSummaryItem('الصافي', balance, Colors.blue.shade400),
               ],
             ),
           ),

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
-import 'package:nabd/data/app_data.dart';
+import 'package:nabd/features/categories/categories_provider.dart';
 import 'package:nabd/features/categories/models/category_model.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
+import 'package:nabd/utils/ui_utils.dart';
 import 'package:nabd/widgets/glass_card.dart';
 import 'package:nabd/widgets/glass_background.dart';
 
@@ -86,15 +87,7 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
     _formKey.currentState!.save();
 
     // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-        ),
-      ),
-    );
+    UiUtils.showLoadingDialog(context);
 
     try {
       // Simulate network delay for better UX
@@ -108,12 +101,13 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
         color: _selectedColor, // Directly use the Color
       );
 
-      final appData = Provider.of<AppData>(context, listen: false);
+      final categoriesProvider =
+          Provider.of<CategoriesProvider>(context, listen: false);
 
       if (_isEditing) {
-        appData.updateCategory(newCategory);
+        await categoriesProvider.updateCategory(newCategory);
       } else {
-        appData.addCategory(newCategory);
+        await categoriesProvider.addCategory(newCategory);
       }
 
       // Close loading indicator

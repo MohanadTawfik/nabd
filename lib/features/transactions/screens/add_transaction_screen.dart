@@ -1,8 +1,8 @@
+import 'package:nabd/features/categories/categories_provider.dart';
 // add_transaction_screen.dart (Updated)
 // Import for TextDirection and other UI-related classes
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/transactions/widgets/categories_panal.dart';
 import 'package:nabd/theme/app_colors.dart';
 import 'package:nabd/features/categories/models/category_model.dart';
@@ -13,9 +13,7 @@ import 'package:intl/intl.dart';
 import 'package:nabd/widgets/glass_background.dart';
 import 'package:nabd/widgets/glass_card.dart';
 import 'package:nabd/features/transactions/screens/smart_input_screen.dart'; // استيراد الشاشة الجديدة
-
-// لم نعد بحاجة لـ InputMethod enum هنا
-// enum InputMethod { manual, ocr, nlp }
+import 'package:nabd/features/transactions/transactions_provider.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final Transaction? transactionToEdit;
@@ -32,8 +30,6 @@ class AddTransactionScreen extends StatefulWidget {
 }
 
 class _AddTransactionScreenState extends State<AddTransactionScreen> {
-  // تم إزالة _currentMethod
-
   // Transaction data
   double? _amount;
   Category? _selectedCategory;
@@ -45,12 +41,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
-  // تم إزالة _nlpController
-
-  // تم إزالة OCR state
-  // bool _isScanning = false;
-  // String? _ocrResult;
-  // String? _ocrParsedData;
 
   @override
   void initState() {
@@ -75,11 +65,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
   void dispose() {
     _amountController.dispose();
     _notesController.dispose();
-    // تم إزالة _nlpController.dispose();
     super.dispose();
   }
 
-  void _saveTransaction() {
+  void _saveTransaction() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -115,18 +104,20 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       source: 'Manual',
     );
 
-    final appData = Provider.of<AppData>(context, listen: false);
+    final provider = Provider.of<TransactionsProvider>(context, listen: false);
     if (_isEditing) {
-      appData.updateTransaction(transaction);
+      await provider.updateTransaction(transaction);
     } else {
-      appData.addTransaction(transaction);
+      await provider.addTransaction(transaction);
     }
-    Navigator.pop(context);
+    if (mounted) Navigator.pop(context);
   }
 
   Future<Category?> _showCategorySelector() async {
-    final allCategories =
-        Provider.of<AppData>(context, listen: false).categories;
+    // Use CategoriesProvider to get categories
+    final categoriesProvider =
+        Provider.of<CategoriesProvider>(context, listen: false);
+    final allCategories = categoriesProvider.categories;
 
     return await showModalBottomSheet<Category>(
       context: context,
@@ -141,12 +132,10 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
             _selectedCategory = _selectedCategory;
           });
         },
-        // _displayType سيتم إدارتها داخل BottomSheet نفسها
       ),
     );
   }
 
-// Replace the entire _buildManualInputContent method with this:
   Widget _buildManualInputContent() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
@@ -182,7 +171,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                       controller: _amountController,
                       keyboardType:
                           TextInputType.numberWithOptions(decimal: true),
-                      // Text direction will be handled by the Row's crossAxisAlignment
                       inputFormatters: [
                         FilteringTextInputFormatter.allow(
                             RegExp(r'^\d*\,?\d{0,2}')),
@@ -224,7 +212,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                         ),
                         hintText: '0',
                       ),
-
                       onChanged: (value) {
                         // Parse the input value, replacing any comma with dot
                         final numericValue = double.tryParse(
@@ -252,20 +239,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   horizontal: 16,
                   vertical: 10,
                 ),
-                // leading: Container(
-                //   padding: const EdgeInsets.all(10),
-                //   decoration: BoxDecoration(
-                //     color: _selectedCategory?.color.withOpacity(0.1) ??
-                //         theme.colorScheme.primary.withOpacity(0.1),
-                //     shape: BoxShape.circle,
-                //   ),
-                //   child: Icon(
-                //     _selectedCategory?.icon ?? Icons.category_outlined,
-                //     color:
-                //         _selectedCategory?.color ?? theme.colorScheme.primary,
-                //     size: 24,
-                //   ),
-                // ),
                 leading: Container(
                   width: 40,
                   height: 40,
@@ -312,18 +285,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                   horizontal: 16,
                   vertical: 10,
                 ),
-                // leading: Container(
-                //   padding: const EdgeInsets.all(10),
-                //   decoration: BoxDecoration(
-                //     color: theme.colorScheme.primary.withOpacity(0.1),
-                //     shape: BoxShape.circle,
-                //   ),
-                //   child: Icon(
-                //     Icons.calendar_today_rounded,
-                //     color: theme.colorScheme.primary,
-                //     size: 24,
-                //   ),
-                // ),
                 leading: Container(
                   width: 40,
                   height: 40,
@@ -355,7 +316,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
 
             // Notes
             GlassCard(
-              // padding: const EdgeInsets.all(16),
               child: TextFormField(
                 controller: _notesController,
                 maxLines: 3,
@@ -379,13 +339,11 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         ));
   }
 
-  // Date selection with theme support
   Future<void> _selectDate() async {
     try {
       final theme = Theme.of(context);
       final isDark = theme.brightness == Brightness.dark;
 
-      // Use Builder to get a context that has access to MaterialLocalizations
       return await showDialog<DateTime>(
         context: context,
         builder: (BuildContext context) {
@@ -452,7 +410,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           color: theme.colorScheme.onSurface,
         ),
         actions: [
-          // Smart Input Button - More prominent with text
           TextButton.icon(
             icon: Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
             label: Text(
@@ -477,7 +434,6 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
                 ),
               );
 
-              // If transactions were saved in the smart input screen, pop this screen
               if (result == true) {
                 if (mounted) {
                   Navigator.pop(context);
@@ -490,20 +446,12 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       ),
       body: GlassBackground(
         child: SafeArea(
-          // SafeArea هنا ستعتني بالمسافة العلوية
           child: Column(
             children: [
-              // لم يعد هناك حاجة لـ Method Selector
-              // Padding(
-              //   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              // ),
               const SizedBox(height: 20),
               Expanded(
-                // المحتوى الرئيسي سيكون دائماً الإدخال اليدوي
                 child: _buildManualInputContent(),
               ),
-
-              // Save Button (always visible at the bottom)
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: SizedBox(

@@ -1,7 +1,7 @@
 // transaction_list_item.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:nabd/data/app_data.dart';
+import 'package:nabd/features/transactions/transactions_provider.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:nabd/widgets/confirmation_dialog.dart';
 import 'package:nabd/widgets/glass_card.dart';
@@ -36,9 +36,9 @@ class TransactionListItem extends StatelessWidget {
               title: 'حذف المعاملة',
               content:
                   'هل أنت متأكد من رغبتك في حذف هذه المعاملة؟ لا يمكن التراجع عن هذا الإجراء.',
-              onConfirm: () {
-                Provider.of<AppData>(context, listen: false)
-                    .deleteTransaction(transaction);
+              onConfirm: () async {
+                await Provider.of<TransactionsProvider>(context, listen: false)
+                    .deleteTransaction(transaction.id);
                 Navigator.of(dialogContext).pop();
               },
             );

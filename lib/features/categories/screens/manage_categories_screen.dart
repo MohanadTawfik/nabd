@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:nabd/features/categories/models/category_model.dart';
 import 'package:nabd/features/categories/screens/add_edit_category_screen.dart';
-import 'package:nabd/data/app_data.dart';
+// Import with prefix to resolve TransactionType name conflict
+import 'package:nabd/features/categories/categories_provider.dart'
+    as categories;
 import 'package:nabd/widgets/glass_card.dart';
 import 'package:nabd/widgets/glass_background.dart';
+import 'package:nabd/widgets/empty_state.dart';
+import 'package:nabd/widgets/modern_app_bar.dart';
 import 'package:nabd/theme/app_colors.dart';
+import 'package:nabd/features/transactions/models/transaction_model.dart';
 
 // The main screen widget, redesigned to match the image
 class ManageCategoriesScreen extends StatefulWidget {
@@ -40,6 +45,38 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final categoriesProvider = Provider.of<categories.CategoriesProvider>(context);
+    
+    // Show loading indicator if data is still loading
+    if (!categoriesProvider.isInitialized) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    
+    // Show error message if there was an error loading categories
+    if (categoriesProvider.error != null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Categories')),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 60),
+              const SizedBox(height: 16),
+              Text('Error loading categories: ${categoriesProvider.error}'),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: categoriesProvider.loadCategories,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -60,10 +97,26 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
               centerTitle: false,
               actions: [
                 IconButton(
-                  icon: Icon(
-                    Icons.add,
-                    color: theme.colorScheme.onSurface,
-                  ),
+                  icon: Icon(Icons.filter_list_rounded,
+                      color: theme.colorScheme.onSurface),
+                  tooltip: 'تصفية وترتيب',
+                  onPressed: () {
+                    // TODO: Implement filter/sort dialog or bottom sheet for categories
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (context) => Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Text('خيارات التصفية والترتيب قادمة قريبًا',
+                            textAlign: TextAlign.center),
+                      ),
+                      backgroundColor: Colors.transparent,
+                      isScrollControlled: true,
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: Icon(Icons.add, color: theme.colorScheme.onSurface),
+                  tooltip: 'إضافة فئة',
                   onPressed: () => _navigateToAddCategory(context),
                 ),
               ],
@@ -136,42 +189,37 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
             ),
 
             Expanded(
-              child: Consumer<AppData>(
-                builder: (context, appData, child) {
+              child: Consumer<categories.CategoriesProvider>(
+                builder: (context, categoriesProvider, child) {
+                  List<Category> allCategories = categoriesProvider.categories;
                   List<Category> categories = _isExpenseSelected
-                      ? List.from(appData.expenseCategories)
-                      : List.from(appData.incomeCategories);
-
+                      ? List.from(allCategories
+                          .where((c) => c.type == TransactionType.expense))
+                      : List.from(allCategories
+                          .where((c) => c.type == TransactionType.income));
                   categories = _filterCategories(categories);
 
                   if (categories.isEmpty) {
                     return _buildEmptyState(context);
                   }
 
-                  return Consumer<AppData>(
-                    builder: (context, appData, _) {
-                      return ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        itemCount: categories.length,
-                        itemBuilder: (context, index) {
-                          final category = categories[index];
-                          // Count transactions for this category
-                          final transactionCount = appData.transactions
-                              .where((t) => t.category.id == category.id)
-                              .length;
-
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8.0),
-                            child: _buildCategoryCard(
-                              context,
-                              category,
-                              transactionCount,
-                              () => _navigateToEditCategory(context, category),
-                              () => _showDeleteDialog(context, category),
-                            ),
-                          );
-                        },
+                  return ListView.builder(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) {
+                      final category = categories[index];
+                      // Transaction count is not available here; set to 0 or implement if needed
+                      final transactionCount = 0;
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8.0),
+                        child: _buildCategoryCard(
+                          context,
+                          category,
+                          transactionCount,
+                          () => _navigateToEditCategory(context, category),
+                          () => _showDeleteDialog(context, category),
+                        ),
                       );
                     },
                   );
@@ -238,8 +286,8 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
           ),
           TextButton(
             onPressed: () {
-              Provider.of<AppData>(context, listen: false)
-                  .deleteCategory(category);
+              Provider.of<categories.CategoriesProvider>(context, listen: false)
+                  .deleteCategory(category.id);
               Navigator.pop(context);
             },
             child: Text(
@@ -297,45 +345,10 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
 
   // Build empty state widget
   Widget _buildEmptyState(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: theme.colorScheme.primary.withOpacity(0.1),
-              ),
-              child: Icon(
-                Icons.category_outlined,
-                size: 48,
-                color: theme.colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'لا توجد فئات متاحة',
-              style: theme.textTheme.titleLarge?.copyWith(
-                color: theme.colorScheme.onBackground,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'انقر على زر + لإضافة فئة جديدة',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.hintColor,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
+    return const EmptyState(
+      icon: Icons.category_outlined,
+      title: 'لا توجد فئات متاحة',
+      message: 'انقر على زر + لإضافة فئة جديدة',
     );
   }
 
@@ -420,31 +433,6 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
               onPressed: onDelete,
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAddCategoryCard(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => const AddEditCategoryScreen()),
-        );
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F9),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: const Center(
-          child: Icon(
-            Icons.add,
-            size: 40,
-            color: Color(0xFF718096),
-          ),
         ),
       ),
     );

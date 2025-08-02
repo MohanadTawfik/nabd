@@ -6,10 +6,10 @@ import 'package:intl/intl.dart';
 import 'package:nabd/theme/app_colors.dart';
 import 'package:nabd/widgets/glass_background.dart';
 import 'package:provider/provider.dart';
-import 'package:nabd/data/app_data.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:nabd/features/transactions/screens/add_transaction_screen.dart';
 import 'package:nabd/widgets/glass_card.dart';
+import 'package:nabd/features/transactions/transactions_provider.dart';
 
 class TransactionDetailScreen extends StatefulWidget {
   final Transaction transaction;
@@ -43,16 +43,12 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Listen to AppData changes and update the transaction if it was modified
-    final appData = Provider.of<AppData>(context, listen: true);
-
-    // Find the updated transaction in the list
-    final updatedTransaction = appData.transactions.firstWhere(
+    // Listen to TransactionsProvider changes and update the transaction if it was modified
+    final provider = Provider.of<TransactionsProvider>(context, listen: true);
+    final updatedTransaction = provider.transactions.firstWhere(
       (t) => t.id == _transaction.id,
       orElse: () => _transaction,
     );
-
-    // Only update if the transaction has actually changed
     if (updatedTransaction.id == _transaction.id &&
         updatedTransaction != _transaction) {
       if (mounted) {
@@ -74,9 +70,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
     setState(() {
       _transaction = updatedTransaction;
     });
-
-    // Force a refresh of the AppData to ensure consistency
-    // The AppData will automatically notify its listeners when updated
 
     // Show a success message
     ScaffoldMessenger.of(context).showSnackBar(
@@ -162,160 +155,62 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
                 ),
 
                 // Amount card with hero animation
-                Hero(
-                  tag: 'transaction_${_transaction.id}_amount',
-                  flightShuttleBuilder: (
-                    BuildContext flightContext,
-                    Animation<double> animation,
-                    HeroFlightDirection flightDirection,
-                    BuildContext fromHeroContext,
-                    BuildContext toHeroContext,
-                  ) {
-                    return AnimatedBuilder(
-                      animation: animation,
-                      builder: (context, child) {
-                        return Transform.scale(
-                          scale: Tween<double>(begin: 1.0, end: 1.05)
-                              .evaluate(animation),
-                          child: child,
-                        );
-                      },
-                      child: GlassCard(
-                        child: Container(
+                GlassCard(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 24.0, horizontal: 16.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
                           padding: const EdgeInsets.symmetric(
-                              vertical: 24.0, horizontal: 16.0),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              // Container(
-                              //   padding: const EdgeInsets.symmetric(
-                              //       horizontal: 12, vertical: 4),
-                              //   decoration: BoxDecoration(
-                              //     color: transactionColor.withOpacity(0.1),
-                              //     borderRadius: BorderRadius.circular(12),
-                              //     border: Border.all(
-                              //       color: transactionColor.withOpacity(0.2),
-                              //       width: 1,
-                              //     ),
-                              //   ),
-                              //   child: Text(
-                              //     isExpense ? 'مصروف' : 'دخل',
-                              //     style: theme.textTheme.labelMedium?.copyWith(
-                              //       color: transactionColor,
-                              //       fontWeight: FontWeight.bold,
-                              //     ),
-                              //   ),
-                              // ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: transactionColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Text(
-                                  isExpense ? 'مصروف' : 'دخل',
-                                  style:
-                                      theme.textTheme.headlineSmall?.copyWith(
-                                    color: transactionColor,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                textBaseline: TextBaseline.alphabetic,
-                                children: [
-                                  Text(
-                                    amountFormat.format(_transaction.amount),
-                                    style:
-                                        theme.textTheme.displayLarge?.copyWith(
-                                      color: theme.colorScheme.onSurface,
-                                      fontWeight: FontWeight.w800,
-                                      height: 0.9,
-                                      letterSpacing: -0.5,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Padding(
-                                    padding: const EdgeInsets.only(bottom: 6.0),
-                                    child: Text(
-                                      '﷼',
-                                      style:
-                                          theme.textTheme.titleLarge?.copyWith(
-                                        color: theme.colorScheme.onSurface
-                                            .withOpacity(0.7),
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                              horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: transactionColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: transactionColor.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            isExpense ? 'مصروف' : 'دخل',
+                            style: theme.textTheme.labelMedium?.copyWith(
+                              color: transactionColor,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
-                      ),
-                    );
-                  },
-                  child: GlassCard(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 24.0, horizontal: 16.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: transactionColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: transactionColor.withOpacity(0.2),
-                                width: 1,
+                        const SizedBox(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              amountFormat.format(_transaction.amount),
+                              style: theme.textTheme.displayLarge?.copyWith(
+                                color: theme.colorScheme.onSurface,
+                                fontWeight: FontWeight.w800,
+                                height: 0.9,
+                                letterSpacing: -0.5,
                               ),
                             ),
-                            child: Text(
-                              isExpense ? 'مصروف' : 'دخل',
-                              style: theme.textTheme.labelMedium?.copyWith(
-                                color: transactionColor,
-                                fontWeight: FontWeight.bold,
+                            const SizedBox(width: 4),
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 6.0),
+                              child: Text(
+                                '﷼',
+                                style: theme.textTheme.titleLarge?.copyWith(
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.7),
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            textBaseline: TextBaseline.alphabetic,
-                            children: [
-                              Text(
-                                amountFormat.format(_transaction.amount),
-                                style: theme.textTheme.displayLarge?.copyWith(
-                                  color: theme.colorScheme.onSurface,
-                                  fontWeight: FontWeight.w800,
-                                  height: 0.9,
-                                  letterSpacing: -0.5,
-                                ),
-                              ),
-                              const SizedBox(width: 4),
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 6.0),
-                                child: Text(
-                                  '﷼',
-                                  style: theme.textTheme.titleLarge?.copyWith(
-                                    color: theme.colorScheme.onSurface
-                                        .withOpacity(0.7),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -535,7 +430,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   }
 
   Future<void> _showEditConfirmation(BuildContext context) async {
-    unawaited(_vibrate());
+    await _vibrate();
     final shouldEdit = await showDialog<bool>(
       context: context,
       builder: (context) {
@@ -582,7 +477,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         );
       },
     );
-
     if (shouldEdit == true && context.mounted) {
       final updatedTransaction = await Navigator.push<Transaction>(
         context,
@@ -590,7 +484,6 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
           builder: (_) => AddTransactionScreen(transactionToEdit: _transaction),
         ),
       );
-
       if (updatedTransaction != null && context.mounted) {
         _onTransactionUpdated(updatedTransaction);
       }
@@ -598,7 +491,7 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
   }
 
   Future<void> _showDeleteConfirmation(BuildContext context) async {
-    unawaited(_vibrate());
+    await _vibrate();
     final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) {
@@ -645,11 +538,11 @@ class _TransactionDetailScreenState extends State<TransactionDetailScreen> {
         );
       },
     );
-
     if (shouldDelete == true && context.mounted) {
       try {
-        Provider.of<AppData>(context, listen: false)
-            .deleteTransaction(_transaction);
+        final provider =
+            Provider.of<TransactionsProvider>(context, listen: false);
+        await provider.deleteTransaction(_transaction.id);
         if (context.mounted) {
           Navigator.of(context).pop();
         }

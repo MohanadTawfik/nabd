@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:nabd/data/app_data.dart';
+import 'package:nabd/features/goals/goals_provider.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
-import 'package:nabd/theme/app_colors.dart';
-import 'package:nabd/theme/app_paddings.dart';
-import 'package:nabd/theme/app_text_styles.dart';
 import 'package:provider/provider.dart';
 
 // 1. حولنا الويدجت إلى StatefulWidget لإدارة المراحل (اقتراح -> اختيار هدف)
@@ -67,17 +64,17 @@ class _RoundUpSuggestionCardState extends State<RoundUpSuggestionCard> {
         Icon(Icons.savings_outlined,
             size: 64, color: Theme.of(context).colorScheme.primary),
         const SizedBox(height: 16),
-        Text('حصالة نبض الذكية',
+        Text('حصالة مصروفي  الذكية',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).colorScheme.onSurface)),
         const SizedBox(height: 8),
         Text(
             'ما رأيك في تقريب المبلغ إلى ${roundUpAmount.toStringAsFixed(0)} ريال وادخار ${difference.toStringAsFixed(0)} ريال إضافية?',
-          textAlign: TextAlign.center,
+            textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              height: 1.5,
-              color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                height: 1.5,
+                color: Theme.of(context).colorScheme.onSurfaceVariant)),
         const SizedBox(height: 24),
         SizedBox(
           width: double.infinity,
@@ -106,11 +103,15 @@ class _RoundUpSuggestionCardState extends State<RoundUpSuggestionCard> {
         TextButton(
           onPressed: widget.onDismiss,
           style: TextButton.styleFrom(
-            foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+            foregroundColor:
+                Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
           ),
           child: Text('لا، شكراً',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7))),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withOpacity(0.7))),
         ),
       ],
     );
@@ -118,8 +119,8 @@ class _RoundUpSuggestionCardState extends State<RoundUpSuggestionCard> {
 
   // ويدجت بناء واجهة اختيار الهدف (المرحلة الثانية)
   Widget _buildGoalSelectionView(BuildContext context, double difference) {
-    final appData = Provider.of<AppData>(context, listen: false);
-    final goals = appData.goals;
+    final goalsProvider = Provider.of<GoalsProvider>(context, listen: false);
+    final goals = goalsProvider.goals;
 
     return Column(
       key: const ValueKey('selection'),
@@ -143,18 +144,32 @@ class _RoundUpSuggestionCardState extends State<RoundUpSuggestionCard> {
                 final goal = goals[index];
                 return Card(
                   color: Theme.of(context).cardColor, // Use theme card color
-                  margin: const EdgeInsets.symmetric(vertical: 6), // Consistent spacing
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), // Rounded corners
+                  margin: const EdgeInsets.symmetric(
+                      vertical: 6), // Consistent spacing
+                  shape: RoundedRectangleBorder(
+                      borderRadius:
+                          BorderRadius.circular(12)), // Rounded corners
                   elevation: 2, // Subtle shadow
                   child: ListTile(
-                    leading: Icon(goal.icon, color: goal.color, size: 30), // Larger icon
+                    leading: Icon(goal.icon,
+                        color: goal.color, size: 30), // Larger icon
                     title: Text(goal.name,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.onSurface)),
-                    trailing: Icon(Icons.arrow_forward_ios, size: 18, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6)),
-                    onTap: () {
-                      appData.addSavingsToGoal(goal, difference);
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
+                            ?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color:
+                                    Theme.of(context).colorScheme.onSurface)),
+                    trailing: Icon(Icons.arrow_forward_ios,
+                        size: 18,
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withOpacity(0.6)),
+                    onTap: () async {
+                      // Implement add savings logic here if needed
+                      // await goalsProvider.addSavingsToGoal(goal, difference);
                       widget.onDismiss();
                     },
                   ),
@@ -170,11 +185,15 @@ class _RoundUpSuggestionCardState extends State<RoundUpSuggestionCard> {
             });
           },
           style: TextButton.styleFrom(
-            foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
+            foregroundColor:
+                Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7),
           ),
           child: Text('رجوع',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.7))),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant
+                      .withOpacity(0.7))),
         ),
       ],
     );

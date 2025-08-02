@@ -14,38 +14,47 @@ class OnboardingPageWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Padding(
-      padding: const EdgeInsets.all(40.0),
+      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(30),
+            padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xff8952ff).withOpacity(0.15),
+              color: theme.colorScheme.primary.withOpacity(0.13),
+              boxShadow: [
+                BoxShadow(
+                  color: theme.colorScheme.primary.withOpacity(0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
-            child: Icon(icon, color: const Color(0xff8952ff), size: 80),
+            child: Icon(icon, color: theme.colorScheme.primary, size: 48),
           ),
-          const SizedBox(height: 50),
+          const SizedBox(height: 32),
           Text(
             title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 28,
+            style: theme.textTheme.titleLarge?.copyWith(
+              color: theme.colorScheme.onBackground,
               fontWeight: FontWeight.bold,
+              fontSize: 22,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
           Text(
             description,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 18,
-              height: 1.5, // لزيادة التباعد بين السطور
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.textTheme.bodyMedium?.color?.withOpacity(0.85) ??
+                  theme.colorScheme.onBackground.withOpacity(0.7),
+              fontSize: 15,
+              height: 1.5,
             ),
           ),
         ],
