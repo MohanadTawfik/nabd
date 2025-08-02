@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:nabd/features/budgets/models/budget_model.dart';
+import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:provider/provider.dart';
-import 'package:nabd/data/app_data.dart';
+import 'package:nabd/features/budgets/budgets_provider.dart';
 import 'package:nabd/features/categories/models/category_model.dart';
 import 'package:nabd/theme/app_colors.dart';
 import 'package:nabd/theme/app_text_styles.dart';
@@ -60,9 +61,16 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   }
 
   void _loadCategories() {
-    final appData = Provider.of<AppData>(context, listen: false);
+    // Use BudgetsProvider to get categories (should be initialized elsewhere)
+    final budgetsProvider =
+        Provider.of<BudgetsProvider>(context, listen: false);
     setState(() {
-      _availableCategories.addAll(appData.expenseCategories);
+      _availableCategories.clear();
+      _availableCategories.addAll(budgetsProvider.budgets
+          .map((b) => b.category)
+          .whereType<Category>()
+          .toSet()
+          .toList());
       _filteredCategories = List.from(_availableCategories);
 
       // Select the category if in edit mode
@@ -71,13 +79,18 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
         if (!_isGeneralBudget) {
           _selectedCategory = _availableCategories.firstWhere(
             (cat) => cat.id == widget.budget!.category?.id,
-            orElse: () => _availableCategories.first,
+            orElse: () => Category(
+              id: 'other',
+              name: 'أخرى',
+              icon: Icons.category,
+              color: Colors.grey,
+              type: TransactionType.expense,
+            ),
           );
         }
       }
     });
   }
-
   @override
   void dispose() {
     _amountController.dispose();
@@ -120,7 +133,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
     );
   }
 
-  void _saveBudget() {
+  Future<void> _saveBudget() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -137,12 +150,14 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
     }
 
     final newBudget = _createBudget();
-    final appData = Provider.of<AppData>(context, listen: false);
+    final budgetsProvider =
+        Provider.of<BudgetsProvider>(context, listen: false);
 
     // Check for existing budget for this category (only for new budgets or when category changes)
-    if (widget.budget == null ||
-        (widget.budget!.category?.id != newBudget.category?.id)) {
-      final existingBudget = appData.budgets.firstWhere(
+    if (!_isGeneralBudget &&
+        (widget.budget == null ||
+            (widget.budget!.category?.id != newBudget.category?.id))) {
+      final existingBudget = budgetsProvider.budgets.firstWhere(
         (b) => b.category?.id == newBudget.category?.id,
         orElse: () => Budget(
           id: '',
@@ -152,9 +167,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
           endDate: DateTime.now(),
         ),
       );
-
       if (existingBudget.id.isNotEmpty) {
-        // A budget already exists for this category
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -168,9 +181,8 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
       }
     }
 
-    // Save the budget
     if (widget.budget != null) {
-      appData.updateBudget(newBudget);
+      await budgetsProvider.updateBudget(newBudget);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('تم تحديث الميزانية بنجاح'),
@@ -178,7 +190,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
         ),
       );
     } else {
-      appData.addBudget(newBudget);
+      await budgetsProvider.addBudget(newBudget);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('تمت إضافة الميزانية بنجاح'),
