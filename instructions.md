@@ -267,5 +267,6 @@ Document each completed step below.
 * [x] Removed all mock data/AppData references (deleted mock services directory).
 * [x] Update screens to reflect real DB data.
 * [x] Test and confirm flows for all CRUD operations.
+* [x] Refactored _showAddOptions in main_screen.dart to directly show AddTransactionScreen or SmartInputScreen as per unified architecture/UI rules. Navigation now uses MaterialPageRoute and no longer relies on named routes for these screens. All changes follow the sequential phases and documentation requirements.
 
 ---

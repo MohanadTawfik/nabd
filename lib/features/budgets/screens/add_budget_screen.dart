@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:nabd/features/budgets/models/budget_model.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
+import 'package:nabd/widgets/glass_card.dart';
 import 'package:provider/provider.dart';
 import 'package:nabd/features/budgets/budgets_provider.dart';
 import 'package:nabd/features/categories/models/category_model.dart';
@@ -34,6 +35,9 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   List<Category> _filteredCategories = [];
   final List<Category> _availableCategories = [];
 
+  DateTime? _customStartDate;
+  DateTime? _customEndDate;
+
   @override
   void initState() {
     super.initState();
@@ -61,7 +65,6 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   }
 
   void _loadCategories() {
-    // Use BudgetsProvider to get categories (should be initialized elsewhere)
     final budgetsProvider =
         Provider.of<BudgetsProvider>(context, listen: false);
     setState(() {
@@ -69,11 +72,10 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
       _availableCategories.addAll(budgetsProvider.budgets
           .map((b) => b.category)
           .whereType<Category>()
+          .where((cat) => cat.type == TransactionType.expense)
           .toSet()
           .toList());
       _filteredCategories = List.from(_availableCategories);
-
-      // Select the category if in edit mode
       if (widget.budget != null) {
         _isGeneralBudget = widget.budget!.category == null;
         if (!_isGeneralBudget) {
@@ -91,6 +93,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
       }
     });
   }
+
   @override
   void dispose() {
     _amountController.dispose();
@@ -98,34 +101,32 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
     super.dispose();
   }
 
-  Budget _createBudget() {
-    final amount = double.tryParse(_amountController.text) ?? 0.0;
+  Budget _createBudget({Category? forCategory, double? amount}) {
     final now = DateTime.now();
-
-    // Calculate end date based on selected period
-    DateTime endDate;
-    switch (_selectedPeriod) {
-      case BudgetPeriod.weekly:
-        endDate = now.add(const Duration(days: 7));
-        break;
-      case BudgetPeriod.monthly:
-        endDate = DateTime(now.year, now.month + 1, now.day);
-        break;
-      case BudgetPeriod.yearly:
-        endDate = DateTime(now.year + 1, now.month, now.day);
-        break;
-      case BudgetPeriod.custom:
-        endDate =
-            now.add(const Duration(days: 30)); // Default 30 days for custom
-        break;
+    DateTime startDate = _customStartDate ?? widget.budget?.startDate ?? now;
+    DateTime endDate = _customEndDate ?? widget.budget?.endDate ?? now;
+    if (_selectedPeriod != BudgetPeriod.custom) {
+      startDate = now;
+      switch (_selectedPeriod) {
+        case BudgetPeriod.weekly:
+          endDate = now.add(const Duration(days: 7));
+          break;
+        case BudgetPeriod.monthly:
+          endDate = DateTime(now.year, now.month + 1, now.day);
+          break;
+        case BudgetPeriod.yearly:
+          endDate = DateTime(now.year + 1, now.month, now.day);
+          break;
+        case BudgetPeriod.custom:
+          break;
+      }
     }
-
     return Budget(
       id: widget.budget?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-      category: _isGeneralBudget ? null : _selectedCategory,
-      totalAmount: amount,
-      startDate: widget.budget?.startDate ?? now,
-      endDate: widget.budget?.endDate ?? endDate,
+      category: forCategory ?? (_isGeneralBudget ? null : _selectedCategory),
+      totalAmount: amount ?? double.tryParse(_amountController.text) ?? 0.0,
+      startDate: startDate,
+      endDate: endDate,
       period: _selectedPeriod,
       receiveNotifications: _receiveNotifications,
       notificationThreshold: _notificationThreshold,
@@ -133,12 +134,21 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
     );
   }
 
+  bool _isOverlapping(Budget newBudget, List<Budget> budgets) {
+    return budgets.any((b) =>
+        b.id != newBudget.id &&
+        b.category?.id == newBudget.category?.id &&
+        b.period == newBudget.period &&
+        ((b.startDate.isBefore(newBudget.endDate) &&
+                b.endDate.isAfter(newBudget.startDate)) ||
+            b.startDate == newBudget.startDate ||
+            b.endDate == newBudget.endDate));
+  }
+
   Future<void> _saveBudget() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
-
-    // Validate category selection for category-specific budgets
     if (!_isGeneralBudget && _selectedCategory == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -148,39 +158,77 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
       );
       return;
     }
-
-    final newBudget = _createBudget();
     final budgetsProvider =
         Provider.of<BudgetsProvider>(context, listen: false);
-
-    // Check for existing budget for this category (only for new budgets or when category changes)
-    if (!_isGeneralBudget &&
-        (widget.budget == null ||
-            (widget.budget!.category?.id != newBudget.category?.id))) {
-      final existingBudget = budgetsProvider.budgets.firstWhere(
-        (b) => b.category?.id == newBudget.category?.id,
-        orElse: () => Budget(
-          id: '',
-          category: null,
-          totalAmount: 0,
-          startDate: DateTime.now(),
-          endDate: DateTime.now(),
-        ),
-      );
-      if (existingBudget.id.isNotEmpty) {
+    final allBudgets = budgetsProvider.budgets;
+    if (_isGeneralBudget) {
+      final amount = double.tryParse(_amountController.text) ?? 0.0;
+      if (_availableCategories.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'يوجد ميزانية مسبقة لـ ${newBudget.category?.name ?? 'هذه الفئة'}. الرجاء تعديل الميزانية الحالية.',
-            ),
-            backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 3),
+          const SnackBar(
+            content: Text('لا توجد فئات مصروفات متاحة'),
+            backgroundColor: Colors.red,
           ),
         );
         return;
       }
+      final perCategory = amount / _availableCategories.length;
+      for (final cat in _availableCategories) {
+        final newBudget = _createBudget(forCategory: cat, amount: perCategory);
+        if (_isOverlapping(newBudget, allBudgets)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content:
+                  Text('يوجد ميزانية لنفس الفئة والفترة متداخلة (${cat.name})'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+          continue;
+        }
+        await budgetsProvider.addBudget(newBudget);
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تمت إضافة الميزانيات بنجاح لجميع الفئات'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
+      return;
     }
-
+    // منع تغيير الفئة عند التعديل
+    if (widget.budget != null && widget.budget!.category != null) {
+      final newBudget = _createBudget(forCategory: widget.budget!.category);
+      if (_isOverlapping(newBudget, allBudgets)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('يوجد ميزانية لنفس الفئة والفترة متداخلة'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+      await budgetsProvider.updateBudget(newBudget);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تم تحديث الميزانية بنجاح'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pop(context);
+      return;
+    }
+    // إضافة أو تحديث ميزانية مخصصة
+    final newBudget = _createBudget();
+    if (_isOverlapping(newBudget, allBudgets)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('يوجد ميزانية لنفس الفئة والفترة متداخلة'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
     if (widget.budget != null) {
       await budgetsProvider.updateBudget(newBudget);
       ScaffoldMessenger.of(context).showSnackBar(
@@ -198,7 +246,6 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
         ),
       );
     }
-
     Navigator.pop(context);
   }
 
@@ -334,7 +381,7 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
   Widget _buildCategoryField() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-
+    final isEdit = widget.budget != null && widget.budget!.category != null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -345,107 +392,198 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
           ),
         ),
         const SizedBox(height: 12),
-
-        // Search Field
-        TextFormField(
-          controller: _searchController,
-          onChanged: _filterCategories,
-          style: theme.textTheme.bodyLarge?.copyWith(
-            color: isDark ? Colors.white : AppColors.textPrimary,
-          ),
-          decoration: InputDecoration(
-            hintText: 'ابحث عن فئة...',
-            prefixIcon: const Icon(Icons.search),
-            filled: true,
-            fillColor:
-                isDark ? Colors.white.withOpacity(0.1) : Colors.grey[100],
-            border: OutlineInputBorder(
+        if (isEdit)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide.none,
+              border: Border.all(
+                color: theme.colorScheme.primary,
+                width: 1.5,
+              ),
             ),
-            contentPadding: const EdgeInsets.symmetric(vertical: 0),
+            child: Row(
+              children: [
+                Icon(widget.budget!.category!.icon,
+                    color: widget.budget!.category!.color, size: 24),
+                const SizedBox(width: 8),
+                Text(widget.budget!.category!.name,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                        fontWeight: FontWeight.bold)),
+              ],
+            ),
+          )
+        else ...[
+          // Search Field
+          TextFormField(
+            controller: _searchController,
+            onChanged: _filterCategories,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: isDark ? Colors.white : AppColors.textPrimary,
+            ),
+            decoration: InputDecoration(
+              hintText: 'ابحث عن فئة...',
+              prefixIcon: const Icon(Icons.search),
+              filled: true,
+              fillColor:
+                  isDark ? Colors.white.withOpacity(0.1) : Colors.grey[100],
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(vertical: 0),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Categories Grid
+          SizedBox(
+            height: 200,
+            child: _filteredCategories.isEmpty
+                ? Center(
+                    child: Text(
+                      'لا توجد فئات متاحة',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color:
+                            isDark ? Colors.white54 : AppColors.textSecondary,
+                      ),
+                    ),
+                  )
+                : GridView.builder(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 4,
+                      childAspectRatio: 1,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                    ),
+                    itemCount: _filteredCategories.length,
+                    itemBuilder: (context, index) {
+                      // final budgetedCategoryIds = appData.budgets
+                      //     .where((b) => b.category != null)
+                      //     .map((b) => b.category!.id)
+                      //     .toSet();
+                      final category = _filteredCategories[index];
+                      // final isAlreadyBudgeted =
+                      //     budgetedCategoryIds.contains(category.id);
+                      final isSelected = _selectedCategory?.id == category.id;
+
+                      return GestureDetector(
+                        onTap:
+                            //  isAlreadyBudgeted ? null :
+                            () {
+                          setState(() {
+                            _selectedCategory = category;
+                          });
+                        },
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? category.color.withOpacity(0.2)
+                                : isDark
+                                    ? Colors.white.withOpacity(0.05)
+                                    : Colors.grey[100],
+                            borderRadius: BorderRadius.circular(12),
+                            border: isSelected
+                                ? Border.all(
+                                    color: category.color,
+                                    width: 2,
+                                  )
+                                : null,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                category.icon,
+                                color: category.color,
+                                size: 24,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                category.name,
+                                style: AppTextStyles.labelSmall.copyWith(
+                                  color: isDark
+                                      ? Colors.white
+                                      : AppColors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildCustomDatePickers() {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Expanded(
+          child: InkWell(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _customStartDate ?? DateTime.now(),
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+              );
+              if (picked != null) {
+                setState(() => _customStartDate = picked);
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              decoration: BoxDecoration(
+                border: Border.all(color: theme.dividerColor),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                _customStartDate != null
+                    ? 'من: ${_customStartDate!.toLocal().toString().split(' ')[0]}'
+                    : 'اختر تاريخ البداية',
+                style: theme.textTheme.bodyLarge,
+              ),
+            ),
           ),
         ),
-        const SizedBox(height: 16),
-
-        // Categories Grid
-        SizedBox(
-          height: 200,
-          child: _filteredCategories.isEmpty
-              ? Center(
-                  child: Text(
-                    'لا توجد فئات متاحة',
-                    style: AppTextStyles.bodyMedium.copyWith(
-                      color: isDark ? Colors.white54 : AppColors.textSecondary,
-                    ),
-                  ),
-                )
-              : GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 4,
-                    childAspectRatio: 1,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: _filteredCategories.length,
-                  itemBuilder: (context, index) {
-                    // final budgetedCategoryIds = appData.budgets
-                    //     .where((b) => b.category != null)
-                    //     .map((b) => b.category!.id)
-                    //     .toSet();
-                    final category = _filteredCategories[index];
-                    // final isAlreadyBudgeted =
-                    //     budgetedCategoryIds.contains(category.id);
-                    final isSelected = _selectedCategory?.id == category.id;
-
-                    return GestureDetector(
-                      onTap:
-                          //  isAlreadyBudgeted ? null :
-                          () {
-                        setState(() {
-                          _selectedCategory = category;
-                        });
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? category.color.withOpacity(0.2)
-                              : isDark
-                                  ? Colors.white.withOpacity(0.05)
-                                  : Colors.grey[100],
-                          borderRadius: BorderRadius.circular(12),
-                          border: isSelected
-                              ? Border.all(
-                                  color: category.color,
-                                  width: 2,
-                                )
-                              : null,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              category.icon,
-                              color: category.color,
-                              size: 24,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              category.name,
-                              style: AppTextStyles.labelSmall.copyWith(
-                                color: isDark
-                                    ? Colors.white
-                                    : AppColors.textPrimary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: InkWell(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _customEndDate ?? DateTime.now(),
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+              );
+              if (picked != null) {
+                setState(() => _customEndDate = picked);
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              decoration: BoxDecoration(
+                border: Border.all(color: theme.dividerColor),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                _customEndDate != null
+                    ? 'إلى: ${_customEndDate!.toLocal().toString().split(' ')[0]}'
+                    : 'اختر تاريخ النهاية',
+                style: theme.textTheme.bodyLarge,
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -500,44 +638,40 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                               const SizedBox(height: 24),
 
                               // Amount Field
-                              TextFormField(
-                                controller: _amountController,
-                                style: AppTextStyles.bodyLarge.copyWith(
-                                  color: isDark
-                                      ? Colors.white
-                                      : AppColors.textPrimary,
-                                ),
-                                decoration: InputDecoration(
-                                  labelText: 'المبلغ الإجمالي',
-                                  labelStyle: AppTextStyles.bodyMedium.copyWith(
-                                    color: isDark
-                                        ? Colors.white70
-                                        : AppColors.textSecondary,
+                              GlassCard(
+                                padding: const EdgeInsets.all(1),
+                                child: TextFormField(
+                                  controller: _amountController,
+                                  keyboardType: TextInputType.number,
+                                  style: theme.textTheme.bodyLarge?.copyWith(
+                                    color: theme.colorScheme.onSurface,
                                   ),
-                                  prefixIcon: const Icon(Icons.currency_yen),
-                                  filled: true,
-                                  fillColor: isDark
-                                      ? Colors.white.withOpacity(0.05)
-                                      : Colors.grey[100],
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide.none,
+                                  decoration: InputDecoration(
+                                    labelText: 'مبلغ الميزانية',
+                                    labelStyle:
+                                        theme.textTheme.bodyLarge?.copyWith(
+                                      color: theme.hintColor,
+                                    ),
+                                    border: InputBorder.none,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 20),
+                                    errorStyle:
+                                        theme.textTheme.bodySmall?.copyWith(
+                                      color: Colors.red[300],
+                                    ),
+                                    prefixIcon:
+                                        const Icon(Icons.attach_money_rounded),
                                   ),
+                                  validator: (val) {
+                                    if (val == null || val.isEmpty)
+                                      return 'أدخل مبلغ الميزانية';
+                                    if (double.tryParse(val) == null)
+                                      return 'أدخل رقمًا صحيحًا';
+                                    return null;
+                                  },
                                 ),
-                                keyboardType: TextInputType.number,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'الرجاء إدخال المبلغ';
-                                  }
-                                  final amount = double.tryParse(value);
-                                  if (amount == null || amount <= 0) {
-                                    return 'الرجاء إدخال مبلغ صحيح';
-                                  }
-                                  return null;
-                                },
                               ),
-
-                              const SizedBox(height: 24),
+                              const SizedBox(height: 14),
 
                               // Budget Period
                               Text(
@@ -549,45 +683,40 @@ class _AddBudgetScreenState extends State<AddBudgetScreen> {
                                 ),
                               ),
                               const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: BudgetPeriod.values.map((period) {
-                                  final isSelected = _selectedPeriod == period;
-                                  final label = _getPeriodLabel(period);
-
-                                  return ChoiceChip(
-                                    label: Text(label),
-                                    selected: isSelected,
-                                    onSelected: (selected) {
-                                      setState(() {
-                                        _selectedPeriod = period;
-                                      });
-                                    },
-                                    backgroundColor: isDark
-                                        ? Colors.white.withOpacity(0.1)
-                                        : Colors.grey[200],
-                                    selectedColor: theme.colorScheme.primary
-                                        .withOpacity(0.2),
+                              GlassCard(
+                                padding: const EdgeInsets.all(1),
+                                child: DropdownButtonFormField<BudgetPeriod>(
+                                  value: _selectedPeriod,
+                                  decoration: InputDecoration(
+                                    labelText: 'فترة الميزانية',
                                     labelStyle:
-                                        AppTextStyles.bodyMedium.copyWith(
-                                      color: isSelected
-                                          ? theme.colorScheme.primary
-                                          : isDark
-                                              ? Colors.white
-                                              : AppColors.textPrimary,
+                                        theme.textTheme.bodyLarge?.copyWith(
+                                      color: theme.hintColor,
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      side: BorderSide(
-                                        color: isSelected
-                                            ? theme.colorScheme.primary
-                                            : Colors.transparent,
-                                      ),
-                                    ),
-                                  );
-                                }).toList(),
+                                    border: InputBorder.none,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 20),
+                                    prefixIcon: const Icon(
+                                        Icons.calendar_month_rounded),
+                                  ),
+                                  items: BudgetPeriod.values.map((period) {
+                                    return DropdownMenuItem(
+                                      value: period,
+                                      child: Text(_getPeriodLabel(period)),
+                                    );
+                                  }).toList(),
+                                  onChanged: (val) {
+                                    setState(() {
+                                      if (val != null) _selectedPeriod = val;
+                                    });
+                                  },
+                                ),
                               ),
+                              if (_selectedPeriod == BudgetPeriod.custom)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 12.0),
+                                  child: _buildCustomDatePickers(),
+                                ),
                             ],
                           )),
                           // Save Button

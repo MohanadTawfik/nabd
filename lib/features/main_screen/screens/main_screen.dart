@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nabd/features/transactions/screens/add_transaction_screen.dart';
+import 'package:nabd/features/transactions/screens/smart_input_screen.dart';
 import 'package:nabd/features/dashboard/screens/dashboard_screen.dart';
 import 'package:nabd/features/budgets/screens/budgets_screen.dart';
 import 'package:nabd/features/insights/screens/insights_hub_screen.dart';
@@ -28,7 +29,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
   void _showAddOptions(BuildContext context) {
     UiUtils.showCustomBottomSheet(
       context: context,
-      title: 'إضافة معاملة جديدة',
+      title: 'كيف تود إضافة معاملتك اليوم؟',
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -39,25 +40,33 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               child:
                   Icon(Icons.add, color: Theme.of(context).colorScheme.primary),
             ),
-            title: const Text('إضافة معاملة يدوياً'),
-            subtitle: const Text('إدخال تفاصيل المعاملة بشكل يدوي'),
+            title: const Text('إدخال يدوي سريع'),
+            subtitle: const Text('سجّل معاملتك بنفسك بخطوات بسيطة وسريعة'),
             onTap: () {
               Navigator.pop(context);
-              Navigator.of(context).pushNamed('/add_transaction');
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => AddTransactionScreen(),
+                ),
+              );
             },
           ),
           ListTile(
             leading: CircleAvatar(
               backgroundColor:
                   Theme.of(context).colorScheme.primary.withOpacity(0.2),
-              child: Icon(Icons.document_scanner,
+              child: Icon(Icons.smart_toy,
                   color: Theme.of(context).colorScheme.primary),
             ),
-            title: const Text('مسح فاتورة'),
-            subtitle: const Text('استخدام الكاميرا لمسح وتحليل الفاتورة'),
+            title: const Text('إدخال ذكي (تجريبي)'),
+            subtitle: const Text('دع الذكاء الاصطناعي يملأ التفاصيل عنك!'),
             onTap: () {
               Navigator.pop(context);
-              Navigator.of(context).pushNamed('/scanner');
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => SmartInputScreen(),
+                ),
+              );
             },
           ),
         ],

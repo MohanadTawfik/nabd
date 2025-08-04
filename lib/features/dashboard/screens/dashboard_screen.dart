@@ -5,10 +5,11 @@ import 'package:nabd/features/dashboard/widgets/daily_tips_widget.dart';
 import 'package:nabd/features/dashboard/widgets/expense_summary_chart.dart';
 import 'package:nabd/features/dashboard/widgets/recent_transactions_widget.dart';
 import 'package:nabd/features/dashboard/widgets/quick_stats_widget.dart';
-import 'package:nabd/features/dashboard/widgets/transaction_filter_sheet.dart';
+import 'package:nabd/features/transactions/widgets/transaction_filter_sheet.dart';
 import 'package:nabd/features/transactions/transactions_provider.dart';
 import 'package:nabd/features/budgets/budgets_provider.dart';
 import 'package:nabd/features/goals/goals_provider.dart';
+import 'package:nabd/features/categories/categories_provider.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:nabd/widgets/glass_background.dart';
 import 'package:nabd/widgets/glass_card.dart';
@@ -56,9 +57,14 @@ class _DashboardScreenState extends State<DashboardScreen>
     });
 
     try {
-      // Load all necessary data
+      // Get the categories provider first
+      final categoriesProvider = context.read<CategoriesProvider>();
+
+      // Load all necessary data with categories provider for transactions
       await Future.wait([
-        context.read<TransactionsProvider>().loadTransactions(),
+        context.read<TransactionsProvider>().loadTransactions(
+              categoriesProvider: categoriesProvider,
+            ),
         context.read<BudgetsProvider>().loadBudgets(),
         context.read<GoalsProvider>().loadGoals(),
       ]);
@@ -72,7 +78,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = 'Failed to load dashboard data';
+          _error = 'Failed to load dashboard data: $e';
         });
       }
     }
@@ -97,10 +103,6 @@ class _DashboardScreenState extends State<DashboardScreen>
         Navigator.of(context).pushNamed('/insights');
         break;
     }
-  }
-
-  void _showFilterSheet() {
-    TransactionFilterSheet.show(context);
   }
 
   void _handleInsightTap(int index) {
@@ -468,25 +470,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                       ),
                       actions: [
                         IconButton(
-                          icon: const Icon(Icons.filter_list_rounded),
-                          onPressed: _showFilterSheet,
-                          tooltip: 'تصفية وترتيب',
-                          style: IconButton.styleFrom(
-                            backgroundColor:
-                                theme.colorScheme.surface.withOpacity(0.5),
-                            foregroundColor: theme.colorScheme.primary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
                           icon: const Icon(Icons.search_rounded),
                           onPressed: () {},
                           tooltip: 'بحث',
-                          style: IconButton.styleFrom(
-                            backgroundColor:
-                                theme.colorScheme.surface.withOpacity(0.5),
-                            foregroundColor: theme.colorScheme.primary,
-                          ),
                         ),
                         const SizedBox(width: 8),
                         IconButton(

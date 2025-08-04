@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nabd/features/auth/screens/login_screen.dart';
-import 'package:nabd/features/main_screen/main_screen.dart';
+import 'package:nabd/features/main_screen/screens/main_screen.dart';
 import 'package:nabd/features/onboarding/screens/onboarding_screen.dart';
 import 'package:nabd/features/auth/auth_provider.dart';
 import 'package:nabd/services/auth_service.dart';

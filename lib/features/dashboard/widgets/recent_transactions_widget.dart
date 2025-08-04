@@ -85,7 +85,7 @@ class RecentTransactionsWidget extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final transaction = recentTransactions[index];
                     return _TransactionTile(
-                      key: ValueKey(transaction.id),
+                      key: ValueKey(transaction),
                       transaction: transaction,
                     );
                   },

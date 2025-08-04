@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:nabd/features/reports/widgets/cash_flow_river_card.dart';
 import 'package:nabd/features/reports/widgets/expenses_by_category_card.dart';
 import 'package:nabd/features/reports/widgets/income_expense_trend_card.dart';
 import 'package:nabd/features/reports/widgets/monthly_summary_card.dart';
@@ -34,8 +33,9 @@ class ReportsScreen extends StatelessWidget {
                     onPressed: () {
                       Navigator.of(context).push(
                         PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) =>
-                              const StoryViewerScreen(),
+                          pageBuilder:
+                              (context, animation, secondaryAnimation) =>
+                                  const StoryViewerScreen(),
                           fullscreenDialog: true,
                         ),
                       );
@@ -50,9 +50,6 @@ class ReportsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 const MonthlySummaryCard(),
-                const SizedBox(height: 24),
-                // 2. استبدال المخطط القديم بالتحفة الفنية الجديدة
-                const CashFlowRiverCard(),
                 const SizedBox(height: 24),
                 const IncomeExpenseTrendCard(),
                 const SizedBox(height: 24),

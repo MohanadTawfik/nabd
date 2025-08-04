@@ -246,16 +246,56 @@ class DatabaseService {
         ),
       ];
 
+      // Default budgets for expense categories (in SAR)
+      final Map<String, double> defaultBudgets = {
+        'housing': 0,     // Rent and utilities
+        'food': 0,       // Food and groceries
+        'transport': 0,   // Transportation
+        'shopping': 0,   // Shopping and supplies
+        'health': 0,     // Health expenses
+        'education': 0,  // Education
+        'entertainment': 0, // Entertainment
+        'commitments': 0, // Financial commitments
+        'other_expense': 0, // Other expenses
+      };
+
       // Insert all default categories in a transaction
       final batch = db.batch();
+      
+      // First, insert all categories
       for (final category in defaultCategories) {
         batch.insert('categories', category.toMap(),
             conflictAlgorithm: ConflictAlgorithm.replace);
       }
 
+      // Then, insert default budgets for expense categories
+      final now = DateTime.now();
+      final firstDayOfMonth = DateTime(now.year, now.month, 1);
+      final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
+      
+      for (final category in defaultCategories.where((c) => c.type == TransactionType.expense)) {
+        if (defaultBudgets.containsKey(category.id)) {
+          final budget = Budget(
+            id: '${category.id}_budget_${now.millisecondsSinceEpoch}',
+            categoryId: category.id,
+            totalAmount: defaultBudgets[category.id]!,
+            startDate: firstDayOfMonth,
+            endDate: lastDayOfMonth,
+            period: BudgetPeriod.monthly,
+            receiveNotifications: true,
+            notificationThreshold: 80.0,
+            spentAmount: 0.0,
+          );
+          
+          batch.insert('budgets', budget.toMap(),
+              conflictAlgorithm: ConflictAlgorithm.replace);
+        }
+      }
+
       await batch.commit(noResult: true);
+      debugPrint('Inserted ${defaultCategories.length} default categories and ${defaultBudgets.length} default budgets');
     } catch (e) {
-      debugPrint('Error inserting default categories: $e');
+      debugPrint('Error inserting default categories and budgets: $e');
       rethrow;
     }
   }

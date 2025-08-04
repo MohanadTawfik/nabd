@@ -4,7 +4,7 @@ import 'package:nabd/features/auth/screens/login_screen.dart';
 import 'package:nabd/features/auth/screens/profile_screen.dart';
 import 'package:nabd/features/auth/screens/register_screen.dart';
 import 'package:nabd/features/auth/widgets/auth_wrapper.dart';
-import 'package:nabd/features/main_screen/main_screen.dart';
+import 'package:nabd/features/main_screen/screens/main_screen.dart';
 import 'package:nabd/features/onboarding/screens/onboarding_screen.dart';
 import 'package:nabd/features/transactions/screens/add_transaction_screen.dart';
 import 'package:nabd/features/budgets/screens/budgets_screen.dart';

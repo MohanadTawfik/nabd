@@ -11,6 +11,7 @@ import 'package:nabd/widgets/empty_state.dart';
 import 'package:nabd/widgets/modern_app_bar.dart';
 import 'package:nabd/theme/app_colors.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
+import 'package:nabd/features/categories/widgets/category_filter_sheet.dart';
 
 // The main screen widget, redesigned to match the image
 class ManageCategoriesScreen extends StatefulWidget {
@@ -25,6 +26,8 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
   bool _isExpenseSelected = true; // Default to 'Incomes'
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  String _sortBy = 'name';
+  bool _sortAscending = true;
 
   @override
   void dispose() {
@@ -39,6 +42,22 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
     return categories.where((category) {
       return category.name.toLowerCase().contains(query);
     }).toList();
+  }
+
+  List<Category> _sortCategories(List<Category> categories) {
+    switch (_sortBy) {
+      case 'name':
+        categories.sort((a, b) => _sortAscending
+            ? a.name.compareTo(b.name)
+            : b.name.compareTo(a.name));
+        break;
+      case 'type':
+        categories.sort((a, b) => _sortAscending
+            ? a.type.index.compareTo(b.type.index)
+            : b.type.index.compareTo(a.type.index));
+        break;
+    }
+    return categories;
   }
 
   @override
@@ -100,18 +119,18 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
                   icon: Icon(Icons.filter_list_rounded,
                       color: theme.colorScheme.onSurface),
                   tooltip: 'تصفية وترتيب',
-                  onPressed: () {
-                    // TODO: Implement filter/sort dialog or bottom sheet for categories
-                    showModalBottomSheet(
-                      context: context,
-                      builder: (context) => Padding(
-                        padding: const EdgeInsets.all(16.0),
-                        child: Text('خيارات التصفية والترتيب قادمة قريبًا',
-                            textAlign: TextAlign.center),
-                      ),
-                      backgroundColor: Colors.transparent,
-                      isScrollControlled: true,
+                  onPressed: () async {
+                    final result = await CategoryFilterSheet.show(
+                      context,
+                      currentSortBy: _sortBy,
+                      currentSortAscending: _sortAscending,
                     );
+                    if (result != null) {
+                      setState(() {
+                        _sortBy = result['sortBy'] as String;
+                        _sortAscending = result['sortAscending'] as bool;
+                      });
+                    }
                   },
                 ),
                 IconButton(
@@ -191,24 +210,24 @@ class _ManageCategoriesScreenState extends State<ManageCategoriesScreen> {
             Expanded(
               child: Consumer<categories.CategoriesProvider>(
                 builder: (context, categoriesProvider, child) {
-                  List<Category> allCategories = categoriesProvider.categories;
-                  List<Category> categories = _isExpenseSelected
-                      ? List.from(allCategories
-                          .where((c) => c.type == TransactionType.expense))
-                      : List.from(allCategories
-                          .where((c) => c.type == TransactionType.income));
-                  categories = _filterCategories(categories);
+                  List<Category> categoriesList = categoriesProvider.categories
+                      .where((cat) => _isExpenseSelected
+                          ? cat.type == TransactionType.expense
+                          : cat.type == TransactionType.income)
+                      .toList();
+                  categoriesList = _filterCategories(categoriesList);
+                  categoriesList = _sortCategories(categoriesList);
 
-                  if (categories.isEmpty) {
+                  if (categoriesList.isEmpty) {
                     return _buildEmptyState(context);
                   }
 
                   return ListView.builder(
                     padding:
                         const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: categories.length,
+                    itemCount: categoriesList.length,
                     itemBuilder: (context, index) {
-                      final category = categories[index];
+                      final category = categoriesList[index];
                       // Transaction count is not available here; set to 0 or implement if needed
                       final transactionCount = 0;
                       return Padding(

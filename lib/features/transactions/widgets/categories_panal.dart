@@ -26,7 +26,8 @@ class CategoriesPanal extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.all(2),
       child: Material(
-        color: isSelected ? category.color.withOpacity(0.2) : Colors.transparent,
+        color:
+            isSelected ? category.color.withOpacity(0.2) : Colors.transparent,
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
           onTap: () => Navigator.pop(context, category),
@@ -67,7 +68,8 @@ class CategoriesPanal extends StatelessWidget {
                     color: isSelected
                         ? category.color
                         : theme.colorScheme.onSurface.withOpacity(0.8),
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 1,
@@ -397,7 +399,8 @@ class CategorySelectorBottomSheetState
                                     const SizedBox(height: 16),
                                     Text(
                                       'لا توجد فئات تطابق البحث',
-                                      style: theme.textTheme.bodyLarge?.copyWith(
+                                      style:
+                                          theme.textTheme.bodyLarge?.copyWith(
                                         color: theme.hintColor,
                                       ),
                                     ),

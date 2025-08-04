@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:nabd/features/categories/categories_provider.dart';
 import 'package:nabd/services/database_service.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:nabd/features/categories/models/category_model.dart';
-import 'package:nabd/models/api_response.dart';
+import 'package:provider/provider.dart';
 
 class TransactionsProvider extends ChangeNotifier {
   final DatabaseService _dbService;
@@ -31,39 +32,48 @@ class TransactionsProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> loadTransactions() async {
+  Future<void> loadTransactions({BuildContext? context, CategoriesProvider? categoriesProvider}) async {
     if (_isLoading) return;
     _setLoading(true);
     try {
       final txnMaps = await _dbService.getTransactions();
+
+      // If categoriesProvider wasn't passed, try to get it from context
+      categoriesProvider ??= context != null 
+          ? Provider.of<CategoriesProvider>(
+              context,
+              listen: false,
+            )
+          : null;
+
+      if (categoriesProvider == null) {
+        debugPrint('Warning: No CategoriesProvider available when loading transactions');
+      }
+
       _transactions = txnMaps.map((txn) {
-        final cat = _categories.firstWhere(
-          (c) => c.id == txn.category.id,
-          orElse: () => txn.category,
-        );
-        return Transaction(
-          id: txn.id,
-          category: cat,
-          amount: txn.amount,
-          type: txn.type,
-          date: txn.date,
-          notes: txn.notes,
-          source: txn.source,
+        return Transaction.fromMap(
+          txn.toMap(),
+          categoriesProvider: categoriesProvider,
         );
       }).toList();
+
       _setError(null);
     } catch (e) {
       _setError('Failed to load transactions: $e');
+      rethrow;
     } finally {
       _setLoading(false);
+      notifyListeners();
     }
-    notifyListeners();
   }
 
-  Future<bool> addTransaction(Transaction transaction) async {
+  Future<bool> addTransaction(Transaction transaction, {BuildContext? context, CategoriesProvider? categoriesProvider}) async {
     try {
       await _dbService.insertTransaction(transaction);
-      await loadTransactions();
+      await loadTransactions(
+        context: context,
+        categoriesProvider: categoriesProvider,
+      );
       return true;
     } catch (e) {
       _setError('Failed to add transaction: $e');
@@ -71,10 +81,13 @@ class TransactionsProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> updateTransaction(Transaction transaction) async {
+  Future<bool> updateTransaction(Transaction transaction, {BuildContext? context, CategoriesProvider? categoriesProvider}) async {
     try {
       await _dbService.updateTransaction(transaction);
-      await loadTransactions();
+      await loadTransactions(
+        context: context,
+        categoriesProvider: categoriesProvider,
+      );
       return true;
     } catch (e) {
       _setError('Failed to update transaction: $e');
@@ -82,10 +95,13 @@ class TransactionsProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> deleteTransaction(String id) async {
+  Future<bool> deleteTransaction(String id, {BuildContext? context, CategoriesProvider? categoriesProvider}) async {
     try {
       await _dbService.deleteTransaction(id);
-      await loadTransactions();
+      await loadTransactions(
+        context: context,
+        categoriesProvider: categoriesProvider,
+      );
       return true;
     } catch (e) {
       _setError('Failed to delete transaction: $e');

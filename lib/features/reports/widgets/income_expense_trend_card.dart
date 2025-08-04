@@ -1,31 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:nabd/features/transactions/transactions_provider.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
 import 'package:nabd/widgets/glass_card.dart';
 import 'package:nabd/theme/app_colors.dart';
-import 'package:nabd/utils/animation_config.dart';
 import 'package:provider/provider.dart';
-import 'package:syncfusion_flutter_charts/charts.dart'
-    show
-        SfCartesianChart,
-        CartesianSeries,
-        LineSeries,
-        CategoryAxis,
-        NumericAxis,
-        Legend,
-        LegendPosition,
-        LegendItemOverflowMode,
-        MajorGridLines,
-        AxisLine,
-        TooltipBehavior,
-        MarkerSettings;
 import 'package:intl/intl.dart';
 
-// This widget displays income vs expense trends using SfCartesianChart
-// It addresses the "A disposed RenderObject was mutated" error by properly
-// disposing the AnimationController and conditionally applying animations
-
 /// A widget that displays income vs expense trend using a line chart.
+/// Uses fl_chart for rendering the chart with a clean, modern look.
 class IncomeExpenseTrendCard extends StatefulWidget {
   const IncomeExpenseTrendCard({Key? key}) : super(key: key);
 
@@ -35,233 +18,242 @@ class IncomeExpenseTrendCard extends StatefulWidget {
 
 class _IncomeExpenseTrendCardState extends State<IncomeExpenseTrendCard>
     with SingleTickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _animation;
-
-  // Track whether the widget is mounted to prevent updating state after disposal
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
   bool _isMounted = false;
 
   @override
   void initState() {
     super.initState();
     _isMounted = true;
-
-    _animationController = AnimationController(
+    _controller = AnimationController(
       vsync: this,
-      duration: AnimationConfig.standardDuration,
+      duration: const Duration(milliseconds: 800),
     );
-
     _animation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOutCubic,
+      parent: _controller,
+      curve: Curves.easeInOut,
     );
-
-    if (AnimationConfig.complexAnimationsEnabled) {
-      _animationController.forward();
-    } else {
-      _animationController.value = 1.0; // Skip animation
-    }
+    _controller.forward();
   }
 
   @override
   void dispose() {
-    // First stop any ongoing animations
-    _animationController.stop();
-    // Set animation value to 1.0 to prevent any further animations
-    _animationController.value = 1.0;
-    // Then dispose the controller
-    _animationController.dispose();
-    // Mark as unmounted to prevent setState after dispose
     _isMounted = false;
+    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    return Consumer<TransactionsProvider>(
+      builder: (context, transactionsProvider, _) {
+        final transactions = transactionsProvider.transactions;
 
-    return Consumer<TransactionsProvider>(builder: (context, txProvider, _) {
-      // Get transactions for the last 6 months
-      final now = DateTime.now();
-      final sixMonthsAgo = DateTime(now.year, now.month - 5, 1);
+        // Group transactions by month
+        final monthlyData = <String, Map<String, double>>{};
 
-      final relevantTransactions = txProvider.transactions.where((t) {
-        return t.date.isAfter(sixMonthsAgo) &&
-            t.date.isBefore(DateTime(now.year, now.month + 1, 0));
-      }).toList();
+        for (final transaction in transactions) {
+          final monthYear = DateFormat('MMM yyyy').format(transaction.date);
+          monthlyData.putIfAbsent(
+              monthYear, () => {'income': 0.0, 'expense': 0.0});
 
-      // Group by month and type
-      final monthlyData = <int, Map<TransactionType, double>>{};
+          if (transaction.type == TransactionType.income) {
+            monthlyData[monthYear]!['income'] =
+                (monthlyData[monthYear]!['income']! + transaction.amount)
+                    .toDouble();
+          } else {
+            monthlyData[monthYear]!['expense'] =
+                (monthlyData[monthYear]!['expense']! + transaction.amount)
+                    .abs()
+                    .toDouble();
+          }
+        }
 
-      for (var month = sixMonthsAgo.month; month <= now.month; month++) {
-        monthlyData[month] = {
-          TransactionType.income: 0,
-          TransactionType.expense: 0,
-        };
-      }
+        // Sort months chronologically
+        final sortedMonths = monthlyData.keys.toList()
+          ..sort((a, b) => DateFormat('MMM yyyy')
+              .parse(a)
+              .compareTo(DateFormat('MMM yyyy').parse(b)));
 
-      for (final transaction in relevantTransactions) {
-        final month = transaction.date.month;
-        final type = transaction.type;
-        monthlyData[month]![type] =
-            (monthlyData[month]![type] ?? 0) + transaction.amount;
-      }
+        // Limit to last 6 months for better readability
+        final recentMonths = sortedMonths.length <= 6
+            ? sortedMonths
+            : sortedMonths.sublist(sortedMonths.length - 6);
 
-      // Create chart data
-      final incomeData = <ChartData>[];
-      final expenseData = <ChartData>[];
+        // Prepare data for the chart
+        final incomeData = recentMonths
+            .map((month) => monthlyData[month]!['income']!)
+            .toList();
 
-      monthlyData.forEach((month, data) {
-        final monthName = DateFormat.MMM().format(DateTime(now.year, month));
-        incomeData.add(ChartData(
-          monthName,
-          data[TransactionType.income] ?? 0,
-          color: AppColors.incomeColor,
-        ));
-        expenseData.add(ChartData(
-          monthName,
-          data[TransactionType.expense] ?? 0,
-          color: AppColors.expenseColor,
-        ));
-      });
+        final expenseData = recentMonths
+            .map((month) => monthlyData[month]!['expense']!)
+            .toList();
 
-      // If no data, show empty state
-      if (incomeData.isEmpty || expenseData.isEmpty) {
+        // Find max value for Y axis scaling
+        final maxY =
+            [...incomeData, ...expenseData].reduce((a, b) => a > b ? a : b) *
+                1.2;
+
         return GlassCard(
           padding: const EdgeInsets.all(16),
-          child: SizedBox(
-            height: 200,
-            child: Center(
-              child: Column(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'اتجاه الدخل والمصروفات',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 200,
+                child: AnimatedBuilder(
+                  animation: _animation,
+                  builder: (context, child) {
+                    return LineChart(
+                      LineChartData(
+                        gridData: FlGridData(show: true),
+                        titlesData: FlTitlesData(
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              getTitlesWidget: (value, meta) {
+                                if (value >= 0 && value < recentMonths.length) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 8.0),
+                                    child: Text(
+                                      recentMonths[value.toInt()],
+                                      style: const TextStyle(fontSize: 10),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  );
+                                }
+                                return const Text('');
+                              },
+                              reservedSize: 40,
+                            ),
+                          ),
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 40,
+                              getTitlesWidget: (value, meta) {
+                                return Text(
+                                  value.toInt().toString(),
+                                  style: const TextStyle(fontSize: 10),
+                                );
+                              },
+                            ),
+                          ),
+                          topTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          rightTitles: const AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                        ),
+                        borderData: FlBorderData(show: false),
+                        minX: 0,
+                        maxX: recentMonths.length - 1,
+                        minY: 0,
+                        maxY: maxY,
+                        lineTouchData: LineTouchData(
+                          touchTooltipData: LineTouchTooltipData(
+                            // tooltipRoundedRadius: 8,
+                            tooltipPadding: const EdgeInsets.all(8),
+                            tooltipMargin: 0,
+                            getTooltipItems: (touchedSpots) {
+                              return touchedSpots.map((touchedSpot) {
+                                return LineTooltipItem(
+                                  '${touchedSpot.y.toStringAsFixed(2)}',
+                                  const TextStyle(
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                );
+                              }).toList();
+                            },
+                          ),
+                        ),
+                        lineBarsData: [
+                          LineChartBarData(
+                            spots: incomeData.asMap().entries.map((e) {
+                              return FlSpot(
+                                e.key.toDouble(),
+                                e.value * _animation.value,
+                              );
+                            }).toList(),
+                            isCurved: true,
+                            color: AppColors.incomeColor,
+                            barWidth: 3,
+                            isStrokeCapRound: true,
+                            dotData: const FlDotData(show: true),
+                            belowBarData: BarAreaData(
+                              show: true,
+                              color: AppColors.incomeColor.withOpacity(0.1),
+                            ),
+                          ),
+                          LineChartBarData(
+                            spots: expenseData.asMap().entries.map((e) {
+                              return FlSpot(
+                                e.key.toDouble(),
+                                e.value * _animation.value,
+                              );
+                            }).toList(),
+                            isCurved: true,
+                            color: AppColors.expenseColor,
+                            barWidth: 3,
+                            isStrokeCapRound: true,
+                            dotData: const FlDotData(show: true),
+                            belowBarData: BarAreaData(
+                              show: true,
+                              color: AppColors.expenseColor.withOpacity(0.1),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.show_chart,
-                    size: 48,
-                    color: theme.colorScheme.primary.withOpacity(0.5),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'لا توجد بيانات كافية لعرض الاتجاه',
-                    style: theme.textTheme.titleMedium,
-                  ),
+                  _buildLegendItem('الدخل', AppColors.incomeColor),
+                  const SizedBox(width: 16),
+                  _buildLegendItem('المصروفات', AppColors.expenseColor),
                 ],
               ),
-            ),
+            ],
           ),
         );
-      }
-
-      return GlassCard(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'اتجاه الدخل والمصروفات',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'آخر 6 أشهر',
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 250,
-              child: _buildChart(incomeData, expenseData, theme),
-            ),
-          ],
-        ),
-      );
-    });
+      },
+    );
   }
 
-  Widget _buildChart(List<ChartData> incomeData, List<ChartData> expenseData,
-      ThemeData theme) {
-    // Create a static chart that won't be rebuilt during animation
-    final chart = SfCartesianChart(
-      plotAreaBorderWidth: 0,
-      legend: Legend(
-        isVisible: true,
-        position: LegendPosition.bottom,
-        overflowMode: LegendItemOverflowMode.wrap,
-        textStyle: theme.textTheme.bodySmall,
-      ),
-      primaryXAxis: CategoryAxis(
-        majorGridLines: const MajorGridLines(width: 0),
-        labelStyle: theme.textTheme.bodySmall,
-      ),
-      primaryYAxis: NumericAxis(
-        labelFormat: '{value} ر.س',
-        axisLine: const AxisLine(width: 0),
-        labelStyle: theme.textTheme.bodySmall,
-        numberFormat: NumberFormat.compact(locale: 'ar'),
-      ),
-      tooltipBehavior: TooltipBehavior(enable: true),
-      series: <CartesianSeries<ChartData, String>>[
-        LineSeries<ChartData, String>(
-          name: 'الدخل',
-          dataSource: incomeData,
-          xValueMapper: (data, _) => data.x,
-          yValueMapper: (data, _) => data.y,
-          color: AppColors.incomeColor,
-          markerSettings: const MarkerSettings(isVisible: true),
-          // Set animation duration to 0 when animations are disabled
-          // This prevents the "A disposed RenderObject was mutated" error
-          animationDuration: AnimationConfig.complexAnimationsEnabled ? 500 : 0,
-          // Ensure animation is completely disabled when not needed
-          animationDelay: 0,
+  Widget _buildLegendItem(String text, Color color) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 12,
+          height: 12,
+          decoration: BoxDecoration(
+            color: color,
+            shape: BoxShape.circle,
+          ),
         ),
-        LineSeries<ChartData, String>(
-          name: 'المصروفات',
-          dataSource: expenseData,
-          xValueMapper: (data, _) => data.x,
-          yValueMapper: (data, _) => data.y,
-          color: AppColors.expenseColor,
-          markerSettings: const MarkerSettings(isVisible: true),
-          // Set animation duration to 0 when animations are disabled
-          // This prevents the "A disposed RenderObject was mutated" error
-          animationDuration: AnimationConfig.complexAnimationsEnabled ? 500 : 0,
-          // Ensure animation is completely disabled when not needed
-          animationDelay: 0,
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: const TextStyle(fontSize: 12),
         ),
       ],
     );
-
-    if (AnimationConfig.complexAnimationsEnabled) {
-      // Use AnimatedBuilder to control the animation without rebuilding the chart
-      return AnimatedBuilder(
-        animation: _animation,
-        // Create the chart once and reuse it to prevent rebuilding during animation
-        // This prevents the "A disposed RenderObject was mutated" error
-        child: chart,
-        builder: (context, child) {
-          // Simply return the pre-built chart without rebuilding it
-          return child!;
-        },
-      );
-    } else {
-      // Return the chart directly without animation wrapper
-      // This prevents any animation-related issues when animations are disabled
-      return chart;
-    }
   }
 }
 

@@ -27,6 +27,7 @@ class Category {
   }
 
   factory Category.fromMap(Map<String, dynamic> map) {
+    final typeStr = (map['type'] ?? 'expense').toString().toLowerCase();
     return Category(
       id: map['id'] ?? '',
       name: map['name'] ?? '',
@@ -36,7 +37,7 @@ class Category {
       ),
       color: Color(map['color'] ?? 0xFF888888),
       type: TransactionType.values.firstWhere(
-        (e) => e.toString().split('.').last == (map['type'] ?? 'expense'),
+        (e) => e.toString().split('.').last.toLowerCase() == typeStr,
         orElse: () => TransactionType.expense,
       ),
     );

@@ -86,7 +86,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
           ),
           backgroundColor: AppColors.errorColor,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
       );
       return;
@@ -104,12 +106,23 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       source: 'Manual',
     );
 
-    final provider = Provider.of<TransactionsProvider>(context, listen: false);
+    final transactionsProvider = Provider.of<TransactionsProvider>(context, listen: false);
+    final categoriesProvider = Provider.of<CategoriesProvider>(context, listen: false);
+    
     if (_isEditing) {
-      await provider.updateTransaction(transaction);
+      await transactionsProvider.updateTransaction(
+        transaction,
+        context: context,
+        categoriesProvider: categoriesProvider,
+      );
     } else {
-      await provider.addTransaction(transaction);
+      await transactionsProvider.addTransaction(
+        transaction,
+        context: context,
+        categoriesProvider: categoriesProvider,
+      );
     }
+    
     if (mounted) Navigator.pop(context);
   }
 
@@ -119,6 +132,9 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
         Provider.of<CategoriesProvider>(context, listen: false);
     final allCategories = categoriesProvider.categories;
 
+    // Determine the initial type based on selected category or default to expense
+    final initialType = _selectedCategory?.type ?? TransactionType.expense;
+
     return await showModalBottomSheet<Category>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -126,11 +142,14 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       builder: (context) => CategorySelectorBottomSheet(
         allCategories: allCategories,
         selectedCategory: _selectedCategory,
-        selectedType: _selectedCategory?.type ?? TransactionType.expense,
+        selectedType: initialType,
         onTypeChanged: (type) {
-          setState(() {
-            _selectedCategory = _selectedCategory;
-          });
+          // When type changes, clear the selected category if it doesn't match the new type
+          if (_selectedCategory != null && _selectedCategory!.type != type) {
+            setState(() {
+              _selectedCategory = null;
+            });
+          }
         },
       ),
     );

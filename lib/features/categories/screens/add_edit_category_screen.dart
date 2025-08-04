@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:nabd/features/budgets/budgets_provider.dart';
+import 'package:nabd/features/budgets/models/budget_model.dart';
 import 'package:nabd/features/categories/categories_provider.dart';
 import 'package:nabd/features/categories/models/category_model.dart';
 import 'package:nabd/features/transactions/models/transaction_model.dart';
@@ -23,6 +25,15 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
   late TransactionType _type;
   late IconData _selectedIcon;
   late Color _selectedColor;
+  List<Budget> _budgets = [];
+  bool _loadingBudgets = false;
+
+  // Budget add/edit form
+  double? _newBudgetAmount;
+  BudgetPeriod _newBudgetPeriod = BudgetPeriod.monthly;
+  bool _newBudgetReceiveNotifications = true;
+  double _newBudgetNotificationThreshold = 80.0;
+  Budget? _editingBudget;
 
   // Available icons for categories
   final List<IconData> _icons = [
@@ -74,11 +85,34 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
   void initState() {
     super.initState();
     _isEditing = widget.categoryToEdit != null;
-    _name = _isEditing ? widget.categoryToEdit!.name : '';
-    _type = _isEditing ? widget.categoryToEdit!.type : TransactionType.expense;
-    _selectedIcon =
-        _isEditing ? widget.categoryToEdit!.icon : Icons.category_outlined;
-    _selectedColor = _isEditing ? widget.categoryToEdit!.color : Colors.blue;
+    _name = widget.categoryToEdit?.name ?? '';
+    _type = widget.categoryToEdit?.type ?? TransactionType.expense;
+    _selectedIcon = widget.categoryToEdit?.icon ?? Icons.category;
+    _selectedColor = widget.categoryToEdit?.color ?? Colors.blue;
+
+    // ميزانية الفئة
+    if (_isEditing) {
+      _loadBudgetsForCategory();
+    }
+  }
+
+  Future<void> _loadBudgetsForCategory() async {
+    setState(() => _loadingBudgets = true);
+    try {
+      final provider = context.read<BudgetsProvider>();
+      await provider.loadBudgets();
+      final all = provider.budgets
+          .where((b) => b.categoryId == widget.categoryToEdit!.id)
+          .toList();
+      setState(() => _budgets = all);
+    } finally {
+      setState(() => _loadingBudgets = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   Future<void> _saveCategory() async {
@@ -94,20 +128,36 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
       await Future.delayed(const Duration(milliseconds: 300));
 
       final newCategory = Category(
-        id: widget.categoryToEdit?.id ?? const Uuid().v4(),
+        id: _isEditing ? widget.categoryToEdit!.id : const Uuid().v4(),
         name: _name,
         type: _type,
-        icon: _selectedIcon, // Directly use the IconData
-        color: _selectedColor, // Directly use the Color
+        icon: _selectedIcon,
+        color: _selectedColor,
       );
 
       final categoriesProvider =
           Provider.of<CategoriesProvider>(context, listen: false);
+      final budgetsProvider =
+          Provider.of<BudgetsProvider>(context, listen: false);
 
+      // Save or update the category
       if (_isEditing) {
         await categoriesProvider.updateCategory(newCategory);
       } else {
         await categoriesProvider.addCategory(newCategory);
+      }
+
+      // حفظ الميزانيات الجديدة أو المعدلة
+      if (_budgets.isNotEmpty) {
+        for (final b in _budgets) {
+          if (b.id.isEmpty) {
+            await budgetsProvider
+                .addBudget(b.copyWith(categoryId: newCategory.id));
+          } else {
+            await budgetsProvider
+                .updateBudget(b.copyWith(categoryId: newCategory.id));
+          }
+        }
       }
 
       // Close loading indicator
@@ -356,6 +406,84 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
                                 ),
                               ),
                             ],
+                          ),
+                        ],
+
+                        // إدارة الميزانيات المتعددة للفئة
+                        if (_type == TransactionType.expense) ...[
+                          const SizedBox(height: 24),
+                          GlassCard(
+                            padding: const EdgeInsets.all(18),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Icon(Icons.account_balance_wallet_rounded,
+                                        color: theme.colorScheme.primary),
+                                    const SizedBox(width: 8),
+                                    Text('ميزانيات الفئة',
+                                        style: theme.textTheme.titleMedium
+                                            ?.copyWith(
+                                                fontWeight: FontWeight.bold)),
+                                  ],
+                                ),
+                                const Divider(
+                                    height: 24,
+                                    thickness: 1,
+                                    color: Colors.white12),
+                                if (_loadingBudgets)
+                                  const Center(
+                                      child: CircularProgressIndicator()),
+                                if (!_loadingBudgets) ...[
+                                  // قائمة الميزانيات الحالية
+                                  ..._budgets.map((b) => Card(
+                                        color: b.displayColor.withOpacity(0.08),
+                                        child: ListTile(
+                                          leading: Icon(Icons.wallet,
+                                              color: b.displayColor),
+                                          title: Text(
+                                              '${b.totalAmount.toStringAsFixed(0)} - ${_periodText(b.period)}'),
+                                          subtitle: Text(
+                                              'من ${b.startDate.toString().substring(0, 10)} إلى ${b.endDate.toString().substring(0, 10)}'),
+                                          trailing: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              IconButton(
+                                                icon: const Icon(Icons.edit,
+                                                    color: Colors.blue),
+                                                onPressed: () =>
+                                                    _showBudgetDialog(edit: b),
+                                              ),
+                                              IconButton(
+                                                icon: const Icon(Icons.delete,
+                                                    color: Colors.red),
+                                                onPressed: () async {
+                                                  setState(
+                                                      () => _budgets.remove(b));
+                                                  if (b.id.isNotEmpty) {
+                                                    await context
+                                                        .read<BudgetsProvider>()
+                                                        .deleteBudget(b.id);
+                                                  }
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      )),
+                                  // زر إضافة ميزانية جديدة
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 12.0),
+                                    child: OutlinedButton.icon(
+                                      icon: const Icon(Icons.add),
+                                      label: const Text('إضافة ميزانية جديدة'),
+                                      onPressed: () => _showBudgetDialog(),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
                           ),
                         ],
 
@@ -649,5 +777,131 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
         ),
       ),
     );
+  }
+
+  // أضف دالة مساعدة للنص العربي لفترة الميزانية
+  // نافذة إضافة/تعديل ميزانية
+  Future<void> _showBudgetDialog({Budget? edit}) async {
+    final theme = Theme.of(context);
+    final isEdit = edit != null;
+    final amountController =
+        TextEditingController(text: isEdit ? edit.totalAmount.toString() : '');
+    BudgetPeriod period = isEdit ? edit.period : BudgetPeriod.monthly;
+    bool receiveNotifications = isEdit ? edit.receiveNotifications : true;
+    double notificationThreshold = isEdit ? edit.notificationThreshold : 80.0;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(isEdit ? 'تعديل الميزانية' : 'إضافة ميزانية'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: amountController,
+                  keyboardType: TextInputType.number,
+                  decoration:
+                      const InputDecoration(labelText: 'مبلغ الميزانية'),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<BudgetPeriod>(
+                  value: period,
+                  items: BudgetPeriod.values
+                      .map((p) => DropdownMenuItem(
+                            value: p,
+                            child: Text(_periodText(p)),
+                          ))
+                      .toList(),
+                  onChanged: (val) {
+                    if (val != null) period = val;
+                  },
+                  decoration:
+                      const InputDecoration(labelText: 'فترة الميزانية'),
+                ),
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  value: receiveNotifications,
+                  onChanged: (val) => receiveNotifications = val,
+                  title: const Text('تفعيل تنبيهات تجاوز الميزانية'),
+                  secondary: const Icon(Icons.notifications_active_rounded),
+                ),
+                if (receiveNotifications) ...[
+                  Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded,
+                          color: Colors.amber),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Slider(
+                          value: notificationThreshold,
+                          min: 10,
+                          max: 100,
+                          divisions: 9,
+                          label: '${notificationThreshold.toInt()}%',
+                          onChanged: (val) => notificationThreshold = val,
+                        ),
+                      ),
+                      Text('${notificationThreshold.toInt()}%',
+                          style: theme.textTheme.bodyMedium),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final amount = double.tryParse(amountController.text) ?? 0;
+                if (amount <= 0) return;
+                setState(() {
+                  if (isEdit) {
+                    final idx = _budgets.indexOf(edit);
+                    _budgets[idx] = edit.copyWith(
+                      totalAmount: amount,
+                      period: period,
+                      receiveNotifications: receiveNotifications,
+                      notificationThreshold: notificationThreshold,
+                    );
+                  } else {
+                    // لا تسمح بتكرار نفس الفترة
+                    if (_budgets.any((b) => b.period == period)) return;
+                    _budgets.add(Budget(
+                      id: '',
+                      categoryId: widget.categoryToEdit?.id ?? '',
+                      totalAmount: amount,
+                      period: period,
+                      receiveNotifications: receiveNotifications,
+                      notificationThreshold: notificationThreshold,
+                    ));
+                  }
+                });
+                Navigator.pop(ctx);
+              },
+              child: Text(isEdit ? 'حفظ' : 'إضافة'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _periodText(BudgetPeriod period) {
+    switch (period) {
+      case BudgetPeriod.weekly:
+        return 'أسبوعية';
+      case BudgetPeriod.monthly:
+        return 'شهرية';
+      case BudgetPeriod.yearly:
+        return 'سنوية';
+      case BudgetPeriod.custom:
+        return 'مخصصة';
+    }
   }
 }

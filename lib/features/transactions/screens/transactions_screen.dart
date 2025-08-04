@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 // Removed unused import
 import 'package:nabd/features/transactions/models/transaction_model.dart';
+import 'package:nabd/features/categories/models/category_model.dart';
 import 'package:nabd/features/transactions/screens/add_transaction_screen.dart';
 import 'package:nabd/features/transactions/screens/transaction_detail_screen.dart';
 import 'package:nabd/features/transactions/widgets/transaction_list_item.dart';
@@ -11,6 +12,8 @@ import 'package:nabd/widgets/empty_state.dart';
 import 'package:provider/provider.dart';
 import 'package:nabd/theme/app_colors.dart'; // إضافة استيراد AppColors
 import 'package:nabd/features/transactions/transactions_provider.dart';
+import 'package:nabd/features/categories/categories_provider.dart';
+import 'package:nabd/features/transactions/widgets/transaction_filter_sheet.dart';
 
 class TransactionsScreen extends StatefulWidget {
   const TransactionsScreen({super.key});
@@ -24,16 +27,59 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
   String _searchQuery = '';
   String _sortBy = 'date';
   bool _sortAscending = false;
+  TransactionType? _filterType;
+  DateTime? _filterStartDate;
+  DateTime? _filterEndDate;
+  RangeValues _filterAmountRange = const RangeValues(0, 50000);
+  List<Category> _filterCategories = [];
 
   List<Transaction> _filterTransactions(List<Transaction> transactions) {
-    if (_searchQuery.isEmpty) return transactions;
+    List<Transaction> filtered = transactions;
 
-    final query = _searchQuery.toLowerCase();
-    return transactions.where((txn) {
-      return (txn.notes?.toLowerCase().contains(query) ?? false) ||
-          txn.amount.toString().contains(query) ||
-          txn.category.name.toLowerCase().contains(query);
-    }).toList();
+    // // Search filter
+    // if (_searchQuery.isNotEmpty) {
+    //   final query = _searchQuery.toLowerCase();
+    //   filtered = filtered.where((txn) {
+    //     return (txn.notes?.toLowerCase().contains(query) ?? false) ||
+    //         txn.amount.toString().contains(query) ||
+    //         txn.category.name.toLowerCase().contains(query);
+    //   }).toList();
+    // }
+
+    // // Type filter
+    // if (_filterType != null) {
+    //   filtered = filtered.where((txn) => txn.type == _filterType).toList();
+    // }
+
+    // // Date range filter
+    // if (_filterStartDate != null) {
+    //   filtered = filtered
+    //       .where((txn) => txn.date
+    //           .isAfter(_filterStartDate!.subtract(const Duration(days: 1))))
+    //       .toList();
+    // }
+    // if (_filterEndDate != null) {
+    //   filtered = filtered
+    //       .where((txn) =>
+    //           txn.date.isBefore(_filterEndDate!.add(const Duration(days: 1))))
+    //       .toList();
+    // }
+
+    // // Amount range filter
+    // filtered = filtered
+    //     .where((txn) =>
+    //         txn.amount >= _filterAmountRange.start &&
+    //         txn.amount <= _filterAmountRange.end)
+    //     .toList();
+
+    // // Categories filter
+    // if (_filterCategories.isNotEmpty) {
+    //   filtered = filtered
+    //       .where((txn) => _filterCategories.contains(txn.category))
+    //       .toList();
+    // }
+
+    return filtered;
   }
 
   List<Transaction> _sortTransactions(List<Transaction> transactions) {
@@ -55,6 +101,51 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
             : b.date.compareTo(a.date));
     }
     return transactions;
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      _searchQuery = _searchController.text;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(_onSearchChanged);
+    // Load transactions when the screen initializes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadTransactions();
+    });
+  }
+
+  // Load transactions with categories
+  Future<void> _loadTransactions() async {
+    final transactionsProvider = Provider.of<TransactionsProvider>(
+      context,
+      listen: false,
+    );
+    final categoriesProvider = Provider.of<CategoriesProvider>(
+      context,
+      listen: false,
+    );
+    await transactionsProvider.loadTransactions(
+      categoriesProvider: categoriesProvider,
+    );
+  }
+
+  void _applyFilterSheet(Map<String, dynamic> filters) {
+    setState(() {
+      _filterType = filters['type'] as TransactionType?;
+      _filterStartDate = filters['startDate'] as DateTime?;
+      _filterEndDate = filters['endDate'] as DateTime?;
+      _filterAmountRange =
+          filters['amountRange'] as RangeValues? ?? const RangeValues(0, 50000);
+      _filterCategories =
+          (filters['categories'] as List?)?.cast<Category>() ?? [];
+      _sortBy = filters['sortBy'] as String? ?? 'date';
+      _sortAscending = filters['sortAscending'] as bool? ?? false;
+    });
   }
 
   @override
@@ -97,16 +188,23 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   centerTitle: false,
                   actions: [
                     IconButton(
-                      icon: Icon(Icons.add,
-                          color:
-                              theme.colorScheme.onSurface), // استخدام onSurface
+                      icon: Icon(Icons.filter_list),
+                      tooltip: 'تصفية وترتيب',
+                      onPressed: () async {
+                        final filters =
+                            await TransactionFilterSheet.show(context);
+                        if (filters != null) {
+                          _applyFilterSheet(filters);
+                        }
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.add),
+                      tooltip: 'إضافة معاملة',
                       onPressed: () {
-                        Navigator.push(
-                          context,
+                        Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => AddTransactionScreen(
-                                // initialType: TransactionType.expense,
-                                ),
+                            builder: (context) => const AddTransactionScreen(),
                           ),
                         );
                       },
@@ -157,18 +255,8 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8),
                   child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        _buildSortChip('التاريخ', 'date'),
-                        const SizedBox(width: 8),
-                        _buildSortChip('المبلغ', 'amount'),
-                        const SizedBox(width: 8),
-                        _buildSortChip('الفئة', 'category'),
-                      ],
-                    ),
-                  ),
+                      // تم استبدال شريط الترتيب بزر التصفية والفلترة الموحد
+                      ),
                 ),
                 Expanded(
                   child: transactions.isEmpty
@@ -240,79 +328,6 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildSortChip(String label, String value) {
-    final isSelected = _sortBy == value;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-    final textTheme = theme.textTheme;
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: isSelected
-            ? [
-                BoxShadow(
-                  color: colorScheme.primary.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ]
-            : null,
-      ),
-      child: Material(
-        color: isSelected
-            ? colorScheme.primary.withOpacity(0.2)
-            : (isDark
-                ? AppColors.grey800.withOpacity(0.3)
-                : AppColors.grey200.withOpacity(0.5)),
-        borderRadius: BorderRadius.circular(12),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () {
-            setState(() {
-              if (isSelected) {
-                _sortAscending = !_sortAscending;
-              } else {
-                _sortBy = value;
-                _sortAscending = false;
-              }
-            });
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  style: textTheme.labelLarge?.copyWith(
-                    color: isSelected
-                        ? colorScheme.onPrimary
-                        : (isDark
-                            ? AppColors.textDark.withOpacity(0.7)
-                            : AppColors.textPrimary.withOpacity(0.8)),
-                    fontWeight:
-                        isSelected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
-                if (isSelected)
-                  Icon(
-                    _sortAscending
-                        ? Icons.arrow_upward_rounded
-                        : Icons.arrow_downward_rounded,
-                    size: 16,
-                    color: colorScheme.onPrimary,
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 

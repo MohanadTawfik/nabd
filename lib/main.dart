@@ -57,6 +57,10 @@ Future<void> main() async {
           create: (context) => ReportsProvider(),
           lazy: false,
         ),
+        ChangeNotifierProvider<GoalsProvider>(
+          create: (context) => GoalsProvider(),
+          lazy: false,
+        ),
       ],
       child: const FinancialApp(),
     ),
