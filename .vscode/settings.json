@@ -3,6 +3,9 @@
   "java.configuration.updateBuildConfiguration": "disabled",
   "Codegeex.RepoIndex": true,
   "Codegeex.Chat.fontSize": 14,
-  "Codegeex.CommitMessageStyle": "Default",
-  "Codegeex.GenerationPreference": "automatic"
+  "Codegeex.CommitMessageStyle": "Auto",
+  "Codegeex.GenerationPreference": "automatic",
+  "Codegeex.Chat.LanguagePreference": "English",
+  "Codegeex.Comment.LanguagePreference": "English",
+  "Codegeex.CommitMessage.LanguagePreference": "English"
 }

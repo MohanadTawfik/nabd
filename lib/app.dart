@@ -61,7 +61,8 @@ class _FinancialAppState extends State<FinancialApp> {
       darkTheme: AppThemes.darkTheme,
       themeMode: ThemeMode.system,
       home:
-          _onboardingComplete ? const AuthWrapper() : const OnboardingScreen(),
+          _onboardingComplete ? const MainScreen() : const OnboardingScreen(),
+      // _onboardingComplete ? const AuthWrapper() : const OnboardingScreen(),
       routes: {
         '/main': (context) => const MainScreen(),
         '/login': (context) => const LoginScreen(),
